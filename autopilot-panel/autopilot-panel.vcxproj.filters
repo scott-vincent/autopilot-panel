@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="autopilot-panel.cpp" />
+    <ClCompile Include="simvars.cpp" />
+    <ClCompile Include="simvarDefs.cpp" />
+    <ClCompile Include="autopilot.cpp" />
+    <ClCompile Include="gpioctrl.cpp" />
+    <ClCompile Include="settings.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="simvars.h" />
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="simvarDefs.h" />
+    <ClInclude Include="autopilot.h" />
+    <ClInclude Include="gpioctrl.h" />
+    <ClInclude Include="settings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="settings\default-settings.json">
+      <Filter>settings</Filter>
+    </None>
+    <None Include="settings\autopilot-panel.json">
+      <Filter>settings</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="settings">
+      <UniqueIdentifier>{094dab80-5399-4ed2-b45a-ef31f3d42e13}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
