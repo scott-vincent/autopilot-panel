@@ -1,6 +1,21 @@
 {
   "Data Link": {
-    "Host": "127.0.0.1",
+    "Host": "192.168.0.1",
     "Port": 52020
+  },
+  "GPIO": {
+    "Speed": {
+      "RotaryEncoder": {
+        "Rot1": 2,
+        "Rot2": 3,
+        "Push": 4
+      }
+    },
+    "Autopilot": {
+      "Switch": {
+        "Push": 20,
+        "Led": 21
+      }
+    }
   }
 }
