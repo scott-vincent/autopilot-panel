@@ -1,0 +1,9 @@
+.git
+.vs
+packages
+**/debug
+**/Debug
+**/release
+**/Release
+**/~AutoRecover*
+autopilot-panel/autopilot-panel
