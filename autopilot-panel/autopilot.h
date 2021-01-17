@@ -2,6 +2,7 @@
 #define _AUTPILOT_H_
 
 #include "simvars.h"
+#include "sevensegment.h"
 
 class autopilot
 {
@@ -26,23 +27,29 @@ private:
 
     SimVars* simVars;
     Aircraft loadedAircraft = NO_AIRCRAFT;
+    sevensegment* sevenSegment;
 
     AutopilotSpd autopilotSpd;
     AutopilotHdg autopilotHdg;
     AutopilotAlt autopilotAlt = AltHold;
     bool showMach = false;
-    bool showHeading = false;
     bool showSpeed = false;
+    bool showHeading = false;
     bool showAltitude = false;
     bool showVerticalSpeed = false;
-    double prevHeading;
-    double prevSpeed;
-    double prevAltitude;
-    double prevVerticalSpeed;
+    int machX100;
+    int speed;
+    int heading;
+    int altitude;
+    int verticalSpeed;
+    int prevSpeed;
+    int prevHeading;
+    int prevAltitude;
+    int prevVerticalSpeed;
     double setVerticalSpeed = 0;
     double setAltitude;
-    bool managedHeading = true;
     bool managedSpeed = true;
+    bool managedHeading = true;
     bool managedAltitude = true;
 
     // Hardware controls
@@ -53,6 +60,12 @@ private:
     int altitudeSetSel = 0;
     time_t lastSpeedAdjust = 0;
     time_t lastSpeedPush = 0;
+    time_t lastHeadingAdjust = 0;
+    time_t lastHeadingPush = 0;
+    time_t lastAltitudeAdjust = 0;
+    time_t lastAltitudePush = 0;
+    time_t lastVerticalSpeedAdjust = 0;
+    time_t lastVerticalSpeedPush = 0;
     time_t now;
 
 public:
@@ -71,11 +84,11 @@ private:
     void captureCurrent();
     void captureVerticalSpeed();
     void restoreVerticalSpeed();
-    int adjustSpeed(int val, int adjust);
-    double adjustMach(double val, int adjust);
-    int adjustHeading(int val, int adjust);
-    int adjustAltitude(int val, int adjust);
-    int adjustVerticalSpeed(int val, int adjust);
+    int adjustSpeed(int adjust);
+    double adjustMach(int adjust);
+    int adjustHeading(int adjust);
+    int adjustAltitude(int adjust);
+    int adjustVerticalSpeed(int adjust);
 };
 
 #endif // _AUTOPILOT_H

@@ -7,6 +7,7 @@ g++ -lwiringPi -lpthread  \
     simvarDefs.cpp \
     simvars.cpp \
     gpioctrl.cpp \
+    sevensegment.cpp \
     autopilot.cpp \
     autopilot-panel.cpp \
     || exit

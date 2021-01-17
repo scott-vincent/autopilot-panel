@@ -7,6 +7,7 @@
     <ClCompile Include="autopilot.cpp" />
     <ClCompile Include="gpioctrl.cpp" />
     <ClCompile Include="settings.cpp" />
+    <ClCompile Include="sevensegment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simvars.h" />
@@ -15,6 +16,7 @@
     <ClInclude Include="autopilot.h" />
     <ClInclude Include="gpioctrl.h" />
     <ClInclude Include="settings.h" />
+    <ClInclude Include="sevensegment.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="settings\default-settings.json">

@@ -143,6 +143,7 @@
     <ClCompile Include="autopilot.cpp" />
     <ClCompile Include="gpioctrl.cpp" />
     <ClCompile Include="settings.cpp" />
+    <ClCompile Include="sevensegment.cpp" />
     <ClCompile Include="simvarDefs.cpp" />
     <ClCompile Include="simvars.cpp" />
   </ItemGroup>
@@ -151,6 +152,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="gpioctrl.h" />
     <ClInclude Include="settings.h" />
+    <ClInclude Include="sevensegment.h" />
     <ClInclude Include="simvarDefs.h" />
     <ClInclude Include="simvars.h" />
   </ItemGroup>

@@ -6,8 +6,10 @@
 #include "gpioctrl.h"
 
 const char* GpioGroup = "GPIO";
-const char* RotaryEncoderGroup = "RotaryEncoder";
-const char* SwitchGroup = "Switch";
+const char* RotaryEncoderGroup = "RotaryEncoder";   // Rot1, Rot2, Push
+const char* ButtonGroup = "Button";                 // Push, Led
+const char* SwitchGroup = "Switch";                 // Toggle, Led
+const char* LampGroup = "Lamp";                     // Led
 
 void watcher(gpioctrl*);
 
@@ -33,26 +35,49 @@ int gpioctrl::getSetting(const char* controlName, const char *controlType, const
     return globals.allSettings->getInt(settingGroup, attribute);
 }
 
-int gpioctrl::addRotaryEncoder(const char *controlName)
+int gpioctrl::addControl()
 {
     if (controlCount >= MaxControls) {
         printf("Maximum number of GPIO controls exceeded\n");
         exit(1);
     }
 
-    gpio[controlCount][Rot1] = getSetting(controlName, RotaryEncoderGroup, "Rot1");
-    gpio[controlCount][Rot2] = getSetting(controlName, RotaryEncoderGroup, "Rot2");
-    gpio[controlCount][Push] = getSetting(controlName, RotaryEncoderGroup, "Push");
-    gpio[controlCount][Led] = INT_MIN;
+    int num = controlCount;
+    controlCount++;
+
+    gpio[num][Rot1] = INT_MIN;
+    gpio[num][Rot2] = INT_MIN;
+    gpio[num][Push] = INT_MIN;
+    gpio[num][Led] = INT_MIN;
+
+    rotateValue[num] = 0;
+    pushValue[num] = 0;
+    toggleValue[num] = 0;
+    lastRotateValue[num] = -1;
+    lastPushValue[num] = -1;
+    lastRotateState[num] = -1;
+    lastPushState[num] = -1;
+    clockwise[num] = true;
+
+    return num;
+}
+
+int gpioctrl::addRotaryEncoder(const char *controlName)
+{
+    int newControl = addControl();
+
+    gpio[newControl][Rot1] = getSetting(controlName, RotaryEncoderGroup, "Rot1");
+    gpio[newControl][Rot2] = getSetting(controlName, RotaryEncoderGroup, "Rot2");
+    gpio[newControl][Push] = getSetting(controlName, RotaryEncoderGroup, "Push");
 
     char msg[256];
-    if (gpio[controlCount][Rot1] != INT_MIN && gpio[controlCount][Rot2] != INT_MIN) {
-        initPin(gpio[controlCount][Rot1], true);
-        initPin(gpio[controlCount][Rot2], true);
+    if (gpio[newControl][Rot1] != INT_MIN && gpio[newControl][Rot2] != INT_MIN) {
+        initPin(gpio[newControl][Rot1], true);
+        initPin(gpio[newControl][Rot2], true);
         sprintf(msg, "Add %s rotary encoder: GPIO%d, GPIO%d",
-            controlName, gpio[controlCount][Rot1], gpio[controlCount][Rot2]);
+            controlName, gpio[newControl][Rot1], gpio[newControl][Rot2]);
     }
-    else if (gpio[controlCount][Rot1] != INT_MIN || gpio[controlCount][Rot2] != INT_MIN) {
+    else if (gpio[newControl][Rot1] != INT_MIN || gpio[newControl][Rot2] != INT_MIN) {
         printf("Must specify both Rot1 and Rot2 (or neither) for control: %s\n", controlName);
         exit(1);
     }
@@ -60,15 +85,15 @@ int gpioctrl::addRotaryEncoder(const char *controlName)
         msg[0] = '\0';
     }
 
-    if (gpio[controlCount][Push] != INT_MIN) {
-        initPin(gpio[controlCount][Push], true);
+    if (gpio[newControl][Push] != INT_MIN) {
+        initPin(gpio[newControl][Push], true);
         if (msg[0] == '\0') {
             sprintf(msg, "Add %s rotary encoder push: GPIO%d", 
-                controlName, gpio[controlCount][Push]);
+                controlName, gpio[newControl][Push]);
         }
         else {
             char addMsg[256];
-            sprintf(addMsg, " with push: GPIO%d", gpio[controlCount][Push]);
+            sprintf(addMsg, " with push: GPIO%d", gpio[newControl][Push]);
             strcat(msg, addMsg);
         }
     }
@@ -77,47 +102,33 @@ int gpioctrl::addRotaryEncoder(const char *controlName)
         printf("%s\n", msg);
     }
 
-    rotateValue[controlCount] = 0;
-    pushValue[controlCount] = 0;
-    lastRotateValue[controlCount] = -1;
-    lastPushValue[controlCount] = -1;
-    lastRotateState[controlCount] = -1;
-    lastPushState[controlCount] = -1;
-    clockwise[controlCount] = true;
-
-    controlCount++;
-    return controlCount - 1;
+    return newControl;
 }
 
-int gpioctrl::addSwitch(const char* controlName)
+int gpioctrl::addButton(const char* controlName)
 {
-    if (controlCount >= MaxControls) {
-        printf("Maximum number of GPIO controls exceeded\n");
-        exit(1);
-    }
+    int newControl = addControl();
 
-    gpio[controlCount][Rot1] = INT_MIN;
-    gpio[controlCount][Rot2] = INT_MIN;
-    gpio[controlCount][Push] = getSetting(controlName, SwitchGroup, "Push");
-    gpio[controlCount][Led] = getSetting(controlName, SwitchGroup, "Led");
+    gpio[newControl][Push] = getSetting(controlName, ButtonGroup, "Push");
+    gpio[newControl][Led] = getSetting(controlName, ButtonGroup, "Led");
 
     char msg[256];
-    if (gpio[controlCount][Push] != INT_MIN) {
-        initPin(gpio[controlCount][Push], true);
-        sprintf(msg, "Add %s switch: GPIO%d", controlName, gpio[controlCount][Push]);
+    if (gpio[newControl][Push] != INT_MIN) {
+        initPin(gpio[newControl][Push], true);
+        sprintf(msg, "Add %s button: GPIO%d", controlName, gpio[newControl][Push]);
     }
     else {
         msg[0] = '\0';
     }
 
-    if (gpio[controlCount][Led] != INT_MIN) {
-        initPin(gpio[controlCount][Led], false);
+    if (gpio[newControl][Led] != INT_MIN) {
+        initPin(gpio[newControl][Led], false);
         if (msg[0] == '\0') {
-            sprintf(msg, "Add %s led: GPIO%d", controlName, gpio[controlCount][Led]);
+            sprintf(msg, "Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
         }
         else {
             char addMsg[256];
-            sprintf(addMsg, " with led: GPIO%d", gpio[controlCount][Led]);
+            sprintf(addMsg, " with led: GPIO%d", gpio[newControl][Led]);
             strcat(msg, addMsg);
         }
     }
@@ -126,12 +137,56 @@ int gpioctrl::addSwitch(const char* controlName)
         printf("%s\n", msg);
     }
 
-    pushValue[controlCount] = 0;
-    lastPushValue[controlCount] = -1;
-    lastPushState[controlCount] = -1;
+    return newControl;
+}
 
-    controlCount++;
-    return controlCount - 1;
+int gpioctrl::addSwitch(const char* controlName)
+{
+    int newControl = addControl();
+
+    gpio[newControl][Toggle] = getSetting(controlName, SwitchGroup, "Toggle");
+    gpio[newControl][Led] = getSetting(controlName, SwitchGroup, "Led");
+
+    char msg[256];
+    if (gpio[newControl][Toggle] != INT_MIN) {
+        initPin(gpio[newControl][Toggle], true);
+        sprintf(msg, "Add %s switch: GPIO%d", controlName, gpio[newControl][Toggle]);
+    }
+    else {
+        msg[0] = '\0';
+    }
+
+    if (gpio[newControl][Led] != INT_MIN) {
+        initPin(gpio[newControl][Led], false);
+        if (msg[0] == '\0') {
+            sprintf(msg, "Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
+        }
+        else {
+            char addMsg[256];
+            sprintf(addMsg, " with led: GPIO%d", gpio[newControl][Led]);
+            strcat(msg, addMsg);
+        }
+    }
+
+    if (msg[0] != '\0') {
+        printf("%s\n", msg);
+    }
+
+    return newControl;
+}
+
+int gpioctrl::addLamp(const char* controlName)
+{
+    int newControl = addControl();
+
+    gpio[newControl][Led] = getSetting(controlName, LampGroup, "Led");
+
+    if (gpio[newControl][Led] != INT_MIN) {
+        initPin(gpio[newControl][Led], false);
+        printf("Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
+    }
+
+    return newControl;
 }
 
 void gpioctrl::initPin(int pin, bool isInput)
@@ -277,7 +332,14 @@ void watcher(gpioctrl *t)
                     else {
                         if (t->pushValue[control] % 2 == 0) t->pushValue[control]++; else t->pushValue[control] += 2;
                     }
+
+                    t->lastPushState[control] = state;
                 }
+            }
+
+            // Check control toggle
+            if (t->gpio[control][Toggle] != INT_MIN) {
+                t->toggleValue[control] = digitalRead(t->gpio[control][Toggle]);
             }
         }
 

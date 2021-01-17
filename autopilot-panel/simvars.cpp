@@ -99,7 +99,8 @@ void dataLink(simvars* t)
     timeout.tv_sec = 0;
     timeout.tv_usec = 500000;
 
-    long dataSize = sizeof(SimVars);
+    // Only want a subset of SimVars for Autopilot panel (to save bandwidth)
+    long dataSize = (long)(&t->simVars.autothrottleActive) + sizeof(t->simVars.autothrottleActive) - (long)&t->simVars;
     long actualSize;
     int bytes;
 
@@ -114,7 +115,10 @@ void dataLink(simvars* t)
     globals.aircraft = NO_AIRCRAFT;
     strcpy(lastAircraft, "");
 
-    int loop = 0;
+    printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+    bool prevConnected = false;
+    int selFail = 0;
+
     while (!globals.quit) {
         // Poll instrument data link
         bytes = sendto(sockfd, (char*)&dataSize, sizeof(long), 0, (SOCKADDR*)&addr, sizeof(addr));
@@ -127,11 +131,29 @@ void dataLink(simvars* t)
             int sel = select(FD_SETSIZE, &fds, 0, 0, &timeout);
             if (sel > 0) {
                 // Receive latest data
+                selFail = 0;
                 bytes = recv(sockfd, (char*)&t->simVars, dataSize, 0);
 
                 if (bytes == dataSize) {
-                    globals.dataLinked = true;
                     globals.connected = (t->simVars.connected == 1);
+
+                    if (!globals.dataLinked) {
+                        globals.dataLinked = true;
+                        printf("Established Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+                        if (!globals.connected) {
+                            printf("Waiting for MS FS2020\n");
+                        }
+                    }
+
+                    if (globals.connected != prevConnected) {
+                        if (globals.connected) {
+                            printf("Connected to MS FS2020\n");
+                        }
+                        else {
+                            printf("Waiting for MS FS2020\n");
+                        }
+                        prevConnected = globals.connected;
+                    }
 
                     // Activate screensaver?
                     if (t->simVars.rpmEngine == lastRpm) {
@@ -175,7 +197,7 @@ void dataLink(simvars* t)
                 }
                 else if (bytes > 0) {
                     memcpy(&actualSize, &t->simVars, sizeof(long));
-                    printf("DataLink: Requested %ld bytes but server has %ld bytes\n", dataSize, actualSize);
+                    printf("DataLink: Requested %ld bytes but server sent %ld bytes\n", dataSize, actualSize);
                     exit(1);
                 }
                 else {
@@ -183,7 +205,11 @@ void dataLink(simvars* t)
                 }
             }
             else {
-                bytes = SOCKET_ERROR;
+                // Link can blip so wait for 5 failures in a row
+                selFail++;
+                if (selFail > 4) {
+                    bytes = SOCKET_ERROR;
+                }
             }
         }
         else {
@@ -195,10 +221,11 @@ void dataLink(simvars* t)
             globals.active = false;
             globals.aircraft = NO_AIRCRAFT;
             strcpy(lastAircraft, "");
+            printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
         }
 
-        // Update 25 times per second
-        usleep(40000);
+        // Update 16 times per second
+        usleep(62500);
     }
 
     closesocket(sockfd);

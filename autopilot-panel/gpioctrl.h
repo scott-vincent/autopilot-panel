@@ -14,7 +14,8 @@ enum pinType {
     Rot1 = 0,
     Rot2 = 1,
     Push = 2,
-    Led = 3
+    Toggle = 3,
+    Led = 4
 };
 
 class gpioctrl
@@ -24,9 +25,10 @@ private:
 
 public:
     int controlCount = 0;
-    int gpio[MaxControls][4];   // One slot for each pinType
+    int gpio[MaxControls][5];   // One slot for each pinType
     int rotateValue[MaxControls];
     int pushValue[MaxControls];
+    int toggleValue[MaxControls];
     int lastRotateValue[MaxControls];
     int lastPushValue[MaxControls];
     int lastRotateState[MaxControls];
@@ -37,8 +39,11 @@ public:
     gpioctrl();
     ~gpioctrl();
     int getSetting(const char* control, const char* controlType, const char* attribute);
+    int addControl();
     int addRotaryEncoder(const char* controlName);
+    int addButton(const char* controlName);
     int addSwitch(const char* controlName);
+    int addLamp(const char* controlName);
     int readRotation(int control);
     int readPush(int control);
     void writeLed(int control, bool on);

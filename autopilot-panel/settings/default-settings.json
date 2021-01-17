@@ -12,7 +12,7 @@
       }
     },
     "Autopilot": {
-      "Switch": {
+      "Button": {
         "Push": 20,
         "Led": 21
       }
