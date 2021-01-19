@@ -266,8 +266,8 @@ void autopilot::gpioSpeedInput()
     // Speed push
     val = globals.gpioCtrl->readPush(speedControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevSpdPush % 2 == 1) {
+            // Short press switches between 5 knot and 1 knot increments
             if (spdSetSel == 1) {
                 spdSetSel = 0;
             }
@@ -330,10 +330,8 @@ void autopilot::gpioHeadingInput()
         time(&lastHdgAdjust);
     }
     else if (lastHdgAdjust != 0) {
-        // Reset digit set selection if more than 2 seconds since last adjustment
         time(&now);
-        if (now - lastHdgAdjust > 2) {
-            hdgSetSel = 0;
+        if (now - lastHdgAdjust > 1) {
             lastHdgAdjust = 0;
         }
     }
@@ -341,27 +339,8 @@ void autopilot::gpioHeadingInput()
     // Heading push
     val = globals.gpioCtrl->readPush(headingControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevHdgPush % 2 == 1) {
-            if (hdgSetSel == 1) {
-                hdgSetSel = 0;
-            }
-            else {
-                hdgSetSel++;
-            }
-            time(&lastHdgPush);
-        }
-        else {
-            // Released
-            lastHdgPush = 0;
-        }
-        prevHdgPush = val;
-    }
-
-    // Heading long push (over 1 sec)
-    if (lastHdgPush > 0) {
-        time(&now);
-        if (now - lastHdgPush > 1) {
+            // Short press switches between managed and selected
             if (autopilotHdg == HdgSet) {
                 autopilotHdg = LevelFlight;
                 globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
@@ -373,8 +352,8 @@ void autopilot::gpioHeadingInput()
                 autopilotHdg = HdgSet;
                 globals.simVars->write(KEY_AP_HDG_HOLD_ON);
             }
-            lastHdgPush = 0;
         }
+        prevHdgPush = val;
     }
 }
 
@@ -416,8 +395,8 @@ void autopilot::gpioAltitudeInput()
     // Altitude push
     val = globals.gpioCtrl->readPush(altitudeControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevAltPush % 2 == 1) {
+            // Short press switches between 1000ft and 100ft increments
             if (altSetSel == 1) {
                 altSetSel = 0;
             }
@@ -468,7 +447,7 @@ void autopilot::gpioVerticalSpeedInput()
         }
 
         if (adjust != 0) {
-            // Adjust VerticalSpeed:
+            // Adjust vertical speed:
             showVerticalSpeed = true;
             double newVal = adjustVerticalSpeed(adjust);
             globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
@@ -481,7 +460,7 @@ void autopilot::gpioVerticalSpeedInput()
     }
     else if (lastVsAdjust != 0) {
         time(&now);
-        if (now - lastVsAdjust > 2) {
+        if (now - lastVsAdjust > 1) {
             lastVsAdjust = 0;
         }
     }
@@ -489,7 +468,7 @@ void autopilot::gpioVerticalSpeedInput()
     // Vertical speed push
     val = globals.gpioCtrl->readPush(verticalSpeedControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
+        // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
             globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
@@ -506,7 +485,6 @@ void autopilot::gpioButtonsInput()
     // Autopilot push
     int val = globals.gpioCtrl->readPush(autopilotControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevApPush % 2 == 1) {
             // Capture current values if autopilot is about to be engaged
             if (!simVars->autopilotEngaged) {
@@ -530,7 +508,6 @@ void autopilot::gpioButtonsInput()
     // Mach push
     val = globals.gpioCtrl->readPush(machControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevMachPush % 2 == 1) {
             // Swap between knots and mach
             machSwap();
@@ -541,7 +518,6 @@ void autopilot::gpioButtonsInput()
     // Autothrottle push
     val = globals.gpioCtrl->readPush(autothrottleControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevAthrPush % 2 == 1) {
             // Toggle auto throttle
             globals.simVars->write(KEY_AUTO_THROTTLE_ARM);
@@ -552,7 +528,6 @@ void autopilot::gpioButtonsInput()
     // Localiser push
     val = globals.gpioCtrl->readPush(localiserControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevLocPush % 2 == 1) {
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
@@ -565,7 +540,6 @@ void autopilot::gpioButtonsInput()
     // Approach push
     val = globals.gpioCtrl->readPush(approachControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevApprPush % 2 == 1) {
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);

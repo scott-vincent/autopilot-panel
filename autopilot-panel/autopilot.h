@@ -69,7 +69,6 @@ private:
     int spdSetSel = 0;
     int prevHdgVal = 0;
     int prevHdgPush = 0;
-    int hdgSetSel = 0;
     int prevAltVal = 0;
     int prevAltPush = 0;
     int altSetSel = 0;
@@ -85,7 +84,6 @@ private:
     time_t lastSpdAdjust = 0;
     time_t lastSpdPush = 0;
     time_t lastHdgAdjust = 0;
-    time_t lastHdgPush = 0;
     time_t lastAltAdjust = 0;
     time_t lastAltPush = 0;
     time_t lastVsAdjust = 0;
