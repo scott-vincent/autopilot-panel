@@ -49,6 +49,7 @@ public:
     void writeLed(int control, bool on);
 
 private:
+    void validateControl(const char* controlName, int control);
     void initPin(int pin, bool isInput);
 };
 

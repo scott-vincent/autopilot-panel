@@ -26,7 +26,7 @@ private:
     };
 
     SimVars* simVars;
-    Aircraft loadedAircraft = NO_AIRCRAFT;
+    Aircraft loadedAircraft = UNDEFINED;
     sevensegment* sevenSegment;
 
     AutopilotSpd autopilotSpd;
@@ -35,7 +35,7 @@ private:
     bool showMach = false;
     bool showSpeed = false;
     bool showHeading = false;
-    bool showAltitude = false;
+    bool showAltitude = true;
     bool showVerticalSpeed = false;
     int machX100;
     int speed;
@@ -54,18 +54,41 @@ private:
 
     // Hardware controls
     int speedControl = -1;
-    int prevSpeedVal = 0;
-    int prevSpeedPush = 0;
-    int speedSetSel = 0;
-    int altitudeSetSel = 0;
-    time_t lastSpeedAdjust = 0;
-    time_t lastSpeedPush = 0;
-    time_t lastHeadingAdjust = 0;
-    time_t lastHeadingPush = 0;
-    time_t lastAltitudeAdjust = 0;
-    time_t lastAltitudePush = 0;
-    time_t lastVerticalSpeedAdjust = 0;
-    time_t lastVerticalSpeedPush = 0;
+    int headingControl = -1;
+    int altitudeControl = -1;
+    int verticalSpeedControl = -1;
+    int autopilotControl = -1;
+    int flightDirectorControl = -1;
+    int machControl = -1;
+    int autothrottleControl = -1;
+    int localiserControl = -1;
+    int approachControl = -1;
+
+    int prevSpdVal = 0;
+    int prevSpdPush = 0;
+    int spdSetSel = 0;
+    int prevHdgVal = 0;
+    int prevHdgPush = 0;
+    int hdgSetSel = 0;
+    int prevAltVal = 0;
+    int prevAltPush = 0;
+    int altSetSel = 0;
+    int prevVsVal = 0;
+    int prevVsPush = 0;
+    int prevApPush = 0;
+    int prevFdPush = 0;
+    int prevMachPush = 0;
+    int prevAthrPush = 0;
+    int prevLocPush = 0;
+    int prevApprPush = 0;
+
+    time_t lastSpdAdjust = 0;
+    time_t lastSpdPush = 0;
+    time_t lastHdgAdjust = 0;
+    time_t lastHdgPush = 0;
+    time_t lastAltAdjust = 0;
+    time_t lastAltPush = 0;
+    time_t lastVsAdjust = 0;
     time_t now;
 
 public:
@@ -75,7 +98,11 @@ public:
 
 private:
     void addGpio();
-    void updateGpio();
+    void gpioSpeedInput();
+    void gpioHeadingInput();
+    void gpioAltitudeInput();
+    void gpioVerticalSpeedInput();
+    void gpioButtonsInput();
     void machSwap();
     void toggleFlightDirector();
     void manSelSpeed();

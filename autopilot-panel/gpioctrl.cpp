@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <set>
 #include <wiringPi.h>
 #include "settings.h"
 #include "gpioctrl.h"
@@ -11,12 +12,21 @@ const char* ButtonGroup = "Button";                 // Push, Led
 const char* SwitchGroup = "Switch";                 // Toggle, Led
 const char* LampGroup = "Lamp";                     // Led
 
+// SPI GPIO pins
+const int SPI_MOSI = 10;
+const int SPI_SCLK = 11;
+const int SPI_CE0 = 8;
+
 void watcher(gpioctrl*);
 
 gpioctrl::gpioctrl()
 {
     // Use BCM GPIO pin numbers
     wiringPiSetupGpio();
+
+    // Reserve pins for SPI channel 0 with no MISO
+    printf("Added SPI CE0 with no MISO: GPIO%d, GPIO%d, GPIO%d\n", SPI_MOSI, SPI_SCLK, SPI_CE0);
+
 }
 
 gpioctrl::~gpioctrl()
@@ -48,6 +58,7 @@ int gpioctrl::addControl()
     gpio[num][Rot1] = INT_MIN;
     gpio[num][Rot2] = INT_MIN;
     gpio[num][Push] = INT_MIN;
+    gpio[num][Toggle] = INT_MIN;
     gpio[num][Led] = INT_MIN;
 
     rotateValue[num] = 0;
@@ -62,6 +73,61 @@ int gpioctrl::addControl()
     return num;
 }
 
+void gpioctrl::validateControl(const char* controlName, int control)
+{
+    std::set<int> usedPins;
+
+    // Reserve SPI pins
+    usedPins.insert(SPI_MOSI);
+    usedPins.insert(SPI_SCLK);
+    usedPins.insert(SPI_CE0);
+
+    // Find all pins already in use
+    for (int num = 0; num < controlCount; num++) {
+        if (num != control) {
+            if (gpio[num][Rot1] != INT_MIN) usedPins.insert(gpio[num][Rot1]);
+            if (gpio[num][Rot2] != INT_MIN) usedPins.insert(gpio[num][Rot2]);
+            if (gpio[num][Push] != INT_MIN) usedPins.insert(gpio[num][Push]);
+            if (gpio[num][Toggle] != INT_MIN) usedPins.insert(gpio[num][Toggle]);
+            if (gpio[num][Led] != INT_MIN) usedPins.insert(gpio[num][Led]);
+        }
+    }
+    
+    // Make sure at least one pin specified
+    if (gpio[control][Rot1] == INT_MIN && gpio[control][Rot2] == INT_MIN
+        && gpio[control][Push] == INT_MIN && gpio[control][Toggle] == INT_MIN
+        && gpio[control][Led] == INT_MIN) {
+        printf("Cannot add %s control as no settings specified\n", controlName);
+        exit(1);
+    }
+
+    // Make sure new pins are unique
+    if (usedPins.find(gpio[control][Rot1]) != usedPins.end()) {
+        printf("Duplicate GPIO pin number specified for %s/Rot1\n", controlName);
+        exit(1);
+    }
+
+    if (usedPins.find(gpio[control][Rot2]) != usedPins.end()) {
+        printf("Duplicate GPIO pin number specified for %s/Rot2\n", controlName);
+        exit(1);
+    }
+
+    if (usedPins.find(gpio[control][Push]) != usedPins.end()) {
+        printf("Duplicate GPIO pin number specified for %s/Push\n", controlName);
+        exit(1);
+    }
+
+    if (usedPins.find(gpio[control][Toggle]) != usedPins.end()) {
+        printf("Duplicate GPIO pin number specified for %s/Toggle\n", controlName);
+        exit(1);
+    }
+
+    if (usedPins.find(gpio[control][Led]) != usedPins.end()) {
+        printf("Duplicate GPIO pin number specified for %s/Led\n", controlName);
+        exit(1);
+    }
+}
+
 int gpioctrl::addRotaryEncoder(const char *controlName)
 {
     int newControl = addControl();
@@ -74,7 +140,7 @@ int gpioctrl::addRotaryEncoder(const char *controlName)
     if (gpio[newControl][Rot1] != INT_MIN && gpio[newControl][Rot2] != INT_MIN) {
         initPin(gpio[newControl][Rot1], true);
         initPin(gpio[newControl][Rot2], true);
-        sprintf(msg, "Add %s rotary encoder: GPIO%d, GPIO%d",
+        sprintf(msg, "Added %s rotary encoder: GPIO%d, GPIO%d",
             controlName, gpio[newControl][Rot1], gpio[newControl][Rot2]);
     }
     else if (gpio[newControl][Rot1] != INT_MIN || gpio[newControl][Rot2] != INT_MIN) {
@@ -88,7 +154,7 @@ int gpioctrl::addRotaryEncoder(const char *controlName)
     if (gpio[newControl][Push] != INT_MIN) {
         initPin(gpio[newControl][Push], true);
         if (msg[0] == '\0') {
-            sprintf(msg, "Add %s rotary encoder push: GPIO%d", 
+            sprintf(msg, "Added %s rotary encoder push: GPIO%d", 
                 controlName, gpio[newControl][Push]);
         }
         else {
@@ -102,6 +168,7 @@ int gpioctrl::addRotaryEncoder(const char *controlName)
         printf("%s\n", msg);
     }
 
+    validateControl(controlName, newControl);
     return newControl;
 }
 
@@ -115,7 +182,7 @@ int gpioctrl::addButton(const char* controlName)
     char msg[256];
     if (gpio[newControl][Push] != INT_MIN) {
         initPin(gpio[newControl][Push], true);
-        sprintf(msg, "Add %s button: GPIO%d", controlName, gpio[newControl][Push]);
+        sprintf(msg, "Added %s button: GPIO%d", controlName, gpio[newControl][Push]);
     }
     else {
         msg[0] = '\0';
@@ -124,7 +191,7 @@ int gpioctrl::addButton(const char* controlName)
     if (gpio[newControl][Led] != INT_MIN) {
         initPin(gpio[newControl][Led], false);
         if (msg[0] == '\0') {
-            sprintf(msg, "Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
+            sprintf(msg, "Added %s led: GPIO%d", controlName, gpio[newControl][Led]);
         }
         else {
             char addMsg[256];
@@ -137,6 +204,7 @@ int gpioctrl::addButton(const char* controlName)
         printf("%s\n", msg);
     }
 
+    validateControl(controlName, newControl);
     return newControl;
 }
 
@@ -150,7 +218,7 @@ int gpioctrl::addSwitch(const char* controlName)
     char msg[256];
     if (gpio[newControl][Toggle] != INT_MIN) {
         initPin(gpio[newControl][Toggle], true);
-        sprintf(msg, "Add %s switch: GPIO%d", controlName, gpio[newControl][Toggle]);
+        sprintf(msg, "Added %s switch: GPIO%d", controlName, gpio[newControl][Toggle]);
     }
     else {
         msg[0] = '\0';
@@ -159,7 +227,7 @@ int gpioctrl::addSwitch(const char* controlName)
     if (gpio[newControl][Led] != INT_MIN) {
         initPin(gpio[newControl][Led], false);
         if (msg[0] == '\0') {
-            sprintf(msg, "Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
+            sprintf(msg, "Added %s led: GPIO%d", controlName, gpio[newControl][Led]);
         }
         else {
             char addMsg[256];
@@ -172,6 +240,7 @@ int gpioctrl::addSwitch(const char* controlName)
         printf("%s\n", msg);
     }
 
+    validateControl(controlName, newControl);
     return newControl;
 }
 
@@ -183,9 +252,10 @@ int gpioctrl::addLamp(const char* controlName)
 
     if (gpio[newControl][Led] != INT_MIN) {
         initPin(gpio[newControl][Led], false);
-        printf("Add %s led: GPIO%d", controlName, gpio[newControl][Led]);
+        printf("Added %s led: GPIO%d", controlName, gpio[newControl][Led]);
     }
 
+    validateControl(controlName, newControl);
     return newControl;
 }
 

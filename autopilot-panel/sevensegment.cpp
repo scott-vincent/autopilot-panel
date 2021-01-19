@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <wiringPi.h>
 #include <wiringPiSPI.h>
 #include "sevensegment.h"
 
@@ -21,8 +22,10 @@
 /// To daisy-chain connect DOUT from one module to DIN on
 /// the next one. Connect all other pins in parallel.
 ///
-/// Note: SPI must be enabled on the Pi so either use raspi-config
-/// or edit /boot/config.txt and add "dtparm=spi=on" then reboot.
+/// Note: SPI must be enabled on the Pi and we only want a
+/// single channel with no MISO (to save pins) so you must
+/// edit /boot/config.txt and add "dtoverlay=spi0-1cs,no_miso".
+/// Don't use "dtparm=spi=on" as this uses up 2 extra pins.
 ///
 
 /// <summary>
@@ -32,7 +35,10 @@ sevensegment::sevensegment(int channel)
 {
     char hex[256];
 
-    // Bus speed is 10 MHz
+    // Init wiring pi, needed for delayMicroseconds
+    wiringPiSetupGpio();
+
+    // Init wiring pi SPI, bus speed is 10 MHz
     wiringPiSPISetup(channel, 10000000);
 
     // Intialise all 3 displays
@@ -138,7 +144,7 @@ void sevensegment::writeSegData3(unsigned char* buf1, unsigned char* buf2, unsig
         digitPos--;
 
         wiringPiSPIDataRW(0, regData, 6);
-        usleep(500);
+        delayMicroseconds(500);
     }
 
     // Display 3 can get corrupted so send its data again!
@@ -151,7 +157,7 @@ void sevensegment::writeSegData3(unsigned char* buf1, unsigned char* buf2, unsig
         digitPos--;
 
         wiringPiSPIDataRW(0, regData, 6);
-        usleep(500);
+        delayMicroseconds(500);
     }
 }
 
@@ -188,6 +194,6 @@ void sevensegment::writeSegHex(int display, char* hex)
         }
 
         wiringPiSPIDataRW(0, regData, dataLen);
-        usleep(500);
+        delayMicroseconds(500);
     }
 }

@@ -9,6 +9,7 @@ class simvars;
 class gpioctrl;
 
 enum Aircraft {
+    UNDEFINED,
     NO_AIRCRAFT,
     CESSNA_152,
     CESSNA_172,
@@ -16,7 +17,7 @@ enum Aircraft {
     SHOCK_ULTRA,
     AIRBUS_A320NEO,
     OTHER_AIRCRAFT,
-    OTHER_AIRCRAFT2
+    OTHER_AIRCRAFT2,
 };
 
 struct globalVars

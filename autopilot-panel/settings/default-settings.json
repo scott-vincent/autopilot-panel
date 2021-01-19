@@ -11,7 +11,57 @@
         "Push": 4
       }
     },
+    "Heading": {
+      "RotaryEncoder": {
+        "Rot1": 17,
+        "Rot2": 27,
+        "Push": 22
+      }
+    },
+    "Altitude": {
+      "RotaryEncoder": {
+        "Rot1": 14,
+        "Rot2": 15,
+        "Push": 18
+      }
+    },
+    "Vertical Speed": {
+      "RotaryEncoder": {
+        "Rot1": 23,
+        "Rot2": 24,
+        "Push": 9
+      }
+    },
     "Autopilot": {
+      "Button": {
+        "Push": 5,
+        "Led": 6
+      }
+    },
+    "Flight Director": {
+      "Button": {
+        "Push": 13,
+        "Led": 19
+      }
+    },
+    "Mach": {
+      "Button": {
+        "Push": 26
+      }
+    },
+    "Autothrottle": {
+      "Button": {
+        "Push": 25,
+        "Led": 7
+      }
+    },
+    "Localiser": {
+      "Button": {
+        "Push": 12,
+        "Led": 16
+      }
+    },
+    "Approach": {
       "Button": {
         "Push": 20,
         "Led": 21
