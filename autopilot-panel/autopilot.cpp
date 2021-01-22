@@ -498,8 +498,8 @@ void autopilot::gpioButtonsInput()
     // Flight Director push
     val = globals.gpioCtrl->readPush(flightDirectorControl);
     if (val != INT_MIN) {
-        // If previous state was unpressed then must have been pressed
         if (prevFdPush % 2 == 1) {
+            // Pressed
             toggleFlightDirector();
         }
         prevFdPush = val;
@@ -529,6 +529,7 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(localiserControl);
     if (val != INT_MIN) {
         if (prevLocPush % 2 == 1) {
+            // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
@@ -541,6 +542,7 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(approachControl);
     if (val != INT_MIN) {
         if (prevApprPush % 2 == 1) {
+            // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
@@ -581,7 +583,7 @@ void autopilot::toggleFlightDirector()
     globals.simVars->write(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
     // Adjust autopilot settings if just after take off
-    if (simVars->altAltitude > 1900) {
+    if (simVars->altAltitude > 2500 || simVars->vsiVerticalSpeed < 100) {
         return;
     }
 

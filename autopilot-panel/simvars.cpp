@@ -156,14 +156,14 @@ void dataLink(simvars* t)
                     }
 
                     // Activate screensaver?
-                    if (t->simVars.rpmEngine == lastRpm) {
+                    if (t->simVars.rpmEngine == lastRpm && t->simVars.rpmPercent < 20) {
                         rpmMatch++;
                     }
                     else {
                         rpmMatch = 0;
                         lastRpm = t->simVars.rpmEngine;
                     }
-                    globals.active = (rpmMatch < 3000 && globals.electrics);
+                    globals.active = (rpmMatch < 6000 && globals.electrics);
 
                     // Identify aircraft
                     if (strcmp(t->simVars.aircraft, lastAircraft) != 0) {
@@ -205,9 +205,9 @@ void dataLink(simvars* t)
                 }
             }
             else {
-                // Link can blip so wait for 5 failures in a row
+                // Link can blip so wait for multiple failures
                 selFail++;
-                if (selFail > 4) {
+                if (selFail > 15) {
                     bytes = SOCKET_ERROR;
                 }
             }
