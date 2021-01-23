@@ -92,11 +92,11 @@ void autopilot::render()
     sevenSegment->writeSegData3(display1, display2, display3);
 
     // Write LEDs
-    globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
-    globals.gpioCtrl->writeLed(flightDirectorControl, simVars->flightDirectorActive);
-    globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
-    globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
-    globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
+    //globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
+    //globals.gpioCtrl->writeLed(flightDirectorControl, simVars->flightDirectorActive);
+    //globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
+    //globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
+    //globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
 }
 
 void autopilot::update()
@@ -486,11 +486,16 @@ void autopilot::gpioButtonsInput()
     int val = globals.gpioCtrl->readPush(autopilotControl);
     if (val != INT_MIN) {
         if (prevApPush % 2 == 1) {
+            printf("Autopilot push\n");
+            globals.gpioCtrl->writeLed(autopilotControl, true);
             // Capture current values if autopilot is about to be engaged
             if (!simVars->autopilotEngaged) {
                 captureCurrent();
             }
             globals.simVars->write(KEY_AP_MASTER);
+        }
+        else {
+            globals.gpioCtrl->writeLed(autopilotControl, false);
         }
         prevApPush = val;
     }
@@ -499,8 +504,13 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(flightDirectorControl);
     if (val != INT_MIN) {
         if (prevFdPush % 2 == 1) {
+            printf("Flight Director push\n");
+            globals.gpioCtrl->writeLed(flightDirectorControl, true);
             // Pressed
             toggleFlightDirector();
+        }
+        else {
+            globals.gpioCtrl->writeLed(flightDirectorControl, false);
         }
         prevFdPush = val;
     }
@@ -509,6 +519,7 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(machControl);
     if (val != INT_MIN) {
         if (prevMachPush % 2 == 1) {
+            printf("Mach push\n");
             // Swap between knots and mach
             machSwap();
         }
@@ -519,8 +530,13 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(autothrottleControl);
     if (val != INT_MIN) {
         if (prevAthrPush % 2 == 1) {
+            printf("Autothrottle push\n");
+            globals.gpioCtrl->writeLed(autothrottleControl, true);
             // Toggle auto throttle
             globals.simVars->write(KEY_AUTO_THROTTLE_ARM);
+        }
+        else {
+            globals.gpioCtrl->writeLed(autothrottleControl, false);
         }
         prevAthrPush = val;
     }
@@ -529,11 +545,16 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(localiserControl);
     if (val != INT_MIN) {
         if (prevLocPush % 2 == 1) {
+            printf("Localiser push\n");
+            globals.gpioCtrl->writeLed(localiserControl, true);
             // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
             globals.simVars->write(KEY_AP_LOC_HOLD);
+        }
+        else {
+            globals.gpioCtrl->writeLed(localiserControl, false);
         }
         prevLocPush = val;
     }
@@ -542,6 +563,8 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(approachControl);
     if (val != INT_MIN) {
         if (prevApprPush % 2 == 1) {
+            printf("Approach push\n");
+            globals.gpioCtrl->writeLed(approachControl, true);
             // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
@@ -549,6 +572,9 @@ void autopilot::gpioButtonsInput()
             else {
                 globals.simVars->write(KEY_AP_APR_HOLD_ON);
             }
+        }
+        else {
+            globals.gpioCtrl->writeLed(approachControl, false);
         }
         prevApprPush = val;
     }
