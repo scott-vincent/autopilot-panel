@@ -42,14 +42,10 @@ sevensegment::sevensegment(int channel)
     wiringPiSPISetup(channel, 10000000);
 
     // Intialise all 3 displays
-    strcpy(hex, "0f000c010a0109ff0b07010f020f030f040f050f060f070f080f");
+    strcpy(hex, "0f000c010a0309ff0b07010f020f030f040f050f060f070f080f");
     writeSegHex(1, hex);
     writeSegHex(2, hex);
     writeSegHex(3, hex);
-
-    // Display 2 is very dim so make it max intensity!
-    strcpy(hex, "0a0f");
-    writeSegHex(2, hex);
 }
 
 /// <summary>

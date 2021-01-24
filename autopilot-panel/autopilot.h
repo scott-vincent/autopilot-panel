@@ -29,6 +29,12 @@ private:
     Aircraft loadedAircraft = UNDEFINED;
     sevensegment* sevenSegment;
 
+    unsigned char display1[8];
+    unsigned char display2[8];
+    unsigned char display3[8];
+    unsigned char prevDisplay1[8];
+    unsigned char prevDisplay2[8];
+    unsigned char prevDisplay3[8];
     AutopilotSpd autopilotSpd;
     AutopilotHdg autopilotHdg;
     AutopilotAlt autopilotAlt = AltHold;
@@ -37,8 +43,8 @@ private:
     bool showHeading = false;
     bool showAltitude = true;
     bool showVerticalSpeed = false;
-    int machX100;
-    int speed;
+    double mach;
+    double speed;
     int heading;
     int altitude;
     int verticalSpeed;
@@ -95,6 +101,7 @@ public:
     void update();
 
 private:
+    void render7seg();
     void addGpio();
     void gpioSpeedInput();
     void gpioHeadingInput();

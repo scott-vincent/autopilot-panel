@@ -59,6 +59,7 @@ void doUpdate()
 int main(int argc, char **argv)
 {
     printf("autopilot-panel %s\n", autopilotVersion);
+    fflush(stdout);
 
     if (argc > 1) {
         init(argv[1]);

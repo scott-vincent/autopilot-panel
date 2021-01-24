@@ -10,20 +10,23 @@ autopilot::autopilot()
 
     // Initialise 7-segment displays
     sevenSegment = new sevensegment(0);
+    prevDisplay1[0] = 'x';
+    prevDisplay2[0] = 'x';
+    prevDisplay3[0] = 'x';
+
+    fflush(stdout);
 }
 
 void autopilot::render()
 {
-    unsigned char display1[8];
-    unsigned char display2[8];
-    unsigned char display3[8];
-
-    if (!globals.avionics) {
+    if (!globals.connected || !globals.avionics) {
         // Turn off 7-segment displays
         sevenSegment->blankSegData(display1, 8, false);
         sevenSegment->blankSegData(display2, 8, false);
         sevenSegment->blankSegData(display3, 8, false);
         sevenSegment->writeSegData3(display1, display2, display3);
+
+        render7seg();
 
         // Turn off LEDS
         globals.gpioCtrl->writeLed(autopilotControl, false);
@@ -31,11 +34,14 @@ void autopilot::render()
         globals.gpioCtrl->writeLed(autothrottleControl, false);
         globals.gpioCtrl->writeLed(localiserControl, false);
         globals.gpioCtrl->writeLed(approachControl, false);
+
+        return;
     }
 
     // Write to 7-segment displays
     if (showSpeed) {
         if (showMach) {
+            int machX100 = (mach + 0.005) * 100;
             int whole = machX100 / 100;
             int frac = machX100 % 100;
             sevenSegment->getSegData(display1, 1, whole, 1);
@@ -43,7 +49,7 @@ void autopilot::render()
             sevenSegment->getSegData(&display1[1], 2, frac, 2);
         }
         else {
-            sevenSegment->getSegData(display1, 3, speed, 3);
+            sevenSegment->getSegData(display1, 3, speed + 0.5, 3);
         }
     }
     else {
@@ -89,14 +95,38 @@ void autopilot::render()
         sevenSegment->blankSegData(display3, 8, false);
     }
 
-    sevenSegment->writeSegData3(display1, display2, display3);
+    render7seg();
 
     // Write LEDs
-    //globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
-    //globals.gpioCtrl->writeLed(flightDirectorControl, simVars->flightDirectorActive);
-    //globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
-    //globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
-    //globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
+    globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
+    globals.gpioCtrl->writeLed(flightDirectorControl, simVars->flightDirectorActive);
+    globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
+    globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
+    globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
+}
+
+void autopilot::render7seg()
+{
+    // Only update displays if something has changed
+    bool update = false;
+    for (int i = 0; i < 8; i++) {
+        if (display1[i] != prevDisplay1[i]) {
+            prevDisplay1[i] = display1[i];
+            update = true;
+        }
+        if (display2[i] != prevDisplay2[i]) {
+            prevDisplay2[i] = display2[i];
+            update = true;
+        }
+        if (display3[i] != prevDisplay3[i]) {
+            prevDisplay3[i] = display3[i];
+            update = true;
+        }
+    }
+
+    if (update) {
+        sevenSegment->writeSegData3(display1, display2, display3);
+    }
 }
 
 void autopilot::update()
@@ -110,7 +140,7 @@ void autopilot::update()
         showHeading = false;
         showAltitude = true;
         showVerticalSpeed = false;
-        machX100 = simVars->autopilotMach;
+        mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
         heading = simVars->autopilotHeading;
         altitude = simVars->autopilotAltitude;
@@ -152,7 +182,7 @@ void autopilot::update()
     // adjusted by the rotary encoders. This stops the displayed values
     // from jumping around due to lag of fetch/update cycle.
     if (lastSpdAdjust == 0) {
-        machX100 = simVars->autopilotMach * 100;
+        mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
     }
     if (lastHdgAdjust == 0) {
@@ -244,7 +274,7 @@ void autopilot::gpioSpeedInput()
             showSpeed = true;
             if (showMach) {
                 double newVal = adjustMach(adjust);
-                globals.simVars->write(KEY_AP_MACH_VAR_SET, newVal);
+                globals.simVars->write(KEY_AP_MACH_VAR_SET, newVal * 100);
             }
             else {
                 double newVal = adjustSpeed(adjust);
@@ -486,16 +516,11 @@ void autopilot::gpioButtonsInput()
     int val = globals.gpioCtrl->readPush(autopilotControl);
     if (val != INT_MIN) {
         if (prevApPush % 2 == 1) {
-            printf("Autopilot push\n");
-            globals.gpioCtrl->writeLed(autopilotControl, true);
             // Capture current values if autopilot is about to be engaged
             if (!simVars->autopilotEngaged) {
                 captureCurrent();
             }
             globals.simVars->write(KEY_AP_MASTER);
-        }
-        else {
-            globals.gpioCtrl->writeLed(autopilotControl, false);
         }
         prevApPush = val;
     }
@@ -504,13 +529,8 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(flightDirectorControl);
     if (val != INT_MIN) {
         if (prevFdPush % 2 == 1) {
-            printf("Flight Director push\n");
-            globals.gpioCtrl->writeLed(flightDirectorControl, true);
             // Pressed
             toggleFlightDirector();
-        }
-        else {
-            globals.gpioCtrl->writeLed(flightDirectorControl, false);
         }
         prevFdPush = val;
     }
@@ -530,13 +550,8 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(autothrottleControl);
     if (val != INT_MIN) {
         if (prevAthrPush % 2 == 1) {
-            printf("Autothrottle push\n");
-            globals.gpioCtrl->writeLed(autothrottleControl, true);
             // Toggle auto throttle
             globals.simVars->write(KEY_AUTO_THROTTLE_ARM);
-        }
-        else {
-            globals.gpioCtrl->writeLed(autothrottleControl, false);
         }
         prevAthrPush = val;
     }
@@ -545,16 +560,11 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(localiserControl);
     if (val != INT_MIN) {
         if (prevLocPush % 2 == 1) {
-            printf("Localiser push\n");
-            globals.gpioCtrl->writeLed(localiserControl, true);
             // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
             globals.simVars->write(KEY_AP_LOC_HOLD);
-        }
-        else {
-            globals.gpioCtrl->writeLed(localiserControl, false);
         }
         prevLocPush = val;
     }
@@ -563,8 +573,6 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(approachControl);
     if (val != INT_MIN) {
         if (prevApprPush % 2 == 1) {
-            printf("Approach push\n");
-            globals.gpioCtrl->writeLed(approachControl, true);
             // Pressed
             if (simVars->autopilotGlideslopeHold) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
@@ -572,9 +580,6 @@ void autopilot::gpioButtonsInput()
             else {
                 globals.simVars->write(KEY_AP_APR_HOLD_ON);
             }
-        }
-        else {
-            globals.gpioCtrl->writeLed(approachControl, false);
         }
         prevApprPush = val;
     }
@@ -592,9 +597,9 @@ void autopilot::machSwap()
         showMach = false;
     }
     else {
-        machX100 = simVars->asiMachSpeed * 100;
+        mach = simVars->asiMachSpeed;
         // For some weird reason you have to set mach * 100 !
-        globals.simVars->write(KEY_AP_MACH_VAR_SET, machX100);
+        globals.simVars->write(KEY_AP_MACH_VAR_SET, mach * 100);
         showMach = true;
     }
 }
@@ -802,14 +807,13 @@ int autopilot::adjustSpeed(int adjust)
 
 double autopilot::adjustMach(int adjust)
 {
-    // For some reason you have to set mach * 100
-    machX100 += adjust;
+    mach += adjust / 100.0;
 
-    if (machX100 < 0) {
-        machX100 = 0;
+    if (mach < 0) {
+        mach = 0;
     }
 
-    return machX100;
+    return mach;
 }
 
 int autopilot::adjustHeading(int adjust)
@@ -863,8 +867,11 @@ int autopilot::adjustAltitude(int adjust)
 
 int autopilot::adjustVerticalSpeed(int adjust)
 {
-    // Allow vertical speed to go negative
-    verticalSpeed += adjust * 100;
+    // Can only adjust vertical speed when in vertical speed hold mode
+    if (autopilotAlt == VerticalSpeedHold) {
+        // Allow vertical speed to go negative
+        verticalSpeed += adjust * 100;
+    }
 
     return verticalSpeed;
 }

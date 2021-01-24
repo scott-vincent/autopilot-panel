@@ -53,6 +53,7 @@ void simvars::write(EVENT_ID eventId, double value)
     if (writeSockfd == INVALID_SOCKET) {
         if ((writeSockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
             printf("Failed to create UDP socket for writing\n");
+            fflush(stdout);
             return;
         }
 
@@ -67,6 +68,7 @@ void simvars::write(EVENT_ID eventId, double value)
     int bytes = sendto(writeSockfd, (char*)&sendBuffer, sizeof(sendBuffer), 0, (SOCKADDR*)&writeAddr, sizeof(writeAddr));
     if (bytes <= 0) {
         printf("Failed to write event %d\n", eventId);
+        fflush(stdout);
     }
 }
 
@@ -116,6 +118,7 @@ void dataLink(simvars* t)
     strcpy(lastAircraft, "");
 
     printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+    fflush(stdout);
     bool prevConnected = false;
     int selFail = 0;
 
@@ -143,6 +146,7 @@ void dataLink(simvars* t)
                         if (!globals.connected) {
                             printf("Waiting for MS FS2020\n");
                         }
+                        fflush(stdout);
                     }
 
                     if (globals.connected != prevConnected) {
@@ -152,6 +156,7 @@ void dataLink(simvars* t)
                         else {
                             printf("Waiting for MS FS2020\n");
                         }
+                        fflush(stdout);
                         prevConnected = globals.connected;
                     }
 
@@ -198,6 +203,7 @@ void dataLink(simvars* t)
                 else if (bytes > 0) {
                     memcpy(&actualSize, &t->simVars, sizeof(long));
                     printf("DataLink: Requested %ld bytes but server sent %ld bytes\n", dataSize, actualSize);
+                    fflush(stdout);
                     exit(1);
                 }
                 else {
@@ -222,6 +228,7 @@ void dataLink(simvars* t)
             globals.aircraft = NO_AIRCRAFT;
             strcpy(lastAircraft, "");
             printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+            fflush(stdout);
         }
 
         // Update 16 times per second
