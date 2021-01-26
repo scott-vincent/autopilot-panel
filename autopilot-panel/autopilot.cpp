@@ -539,7 +539,6 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(machControl);
     if (val != INT_MIN) {
         if (prevMachPush % 2 == 1) {
-            printf("Mach push\n");
             // Swap between knots and mach
             machSwap();
         }
