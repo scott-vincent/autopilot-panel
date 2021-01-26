@@ -19,7 +19,7 @@ autopilot::autopilot()
 
 void autopilot::render()
 {
-    if (!globals.connected || !globals.avionics) {
+    if (!globals.electrics) {
         // Turn off 7-segment displays
         sevenSegment->blankSegData(display1, 8, false);
         sevenSegment->blankSegData(display2, 8, false);
@@ -539,7 +539,6 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(machControl);
     if (val != INT_MIN) {
         if (prevMachPush % 2 == 1) {
-            printf("Mach push\n");
             // Swap between knots and mach
             machSwap();
         }
