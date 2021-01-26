@@ -34,64 +34,46 @@ void autopilot::render()
     }
 
     // Write to 7-segment displays
-    if (showSpeed) {
-        if (managedSpeed) {
-            sevenSegment->blankSegData(display1, 3, true);
-            sevenSegment->decimalSegData(display1, 2);
-        }
-        else if (showMach) {
-            int machX100 = (mach + 0.005) * 100;
-            int whole = machX100 / 100;
-            int frac = machX100 % 100;
-            sevenSegment->getSegData(display1, 1, whole, 1);
-            sevenSegment->decimalSegData(display1, 0);
-            sevenSegment->getSegData(&display1[1], 2, frac, 2);
-        }
-        else {
-            sevenSegment->getSegData(display1, 3, speed + 0.5, 3);
-        }
+    if (managedSpeed) {
+        sevenSegment->blankSegData(display1, 3, true);
+        sevenSegment->decimalSegData(display1, 2);
+    }
+    else if (showMach) {
+        int machX100 = (mach + 0.005) * 100;
+        int whole = machX100 / 100;
+        int frac = machX100 % 100;
+        sevenSegment->getSegData(display1, 1, whole, 1);
+        sevenSegment->decimalSegData(display1, 0);
+        sevenSegment->getSegData(&display1[1], 2, frac, 2);
     }
     else {
-        sevenSegment->blankSegData(display1, 3, false);
+        sevenSegment->getSegData(display1, 3, speed + 0.5, 3);
     }
 
     // Blank
     sevenSegment->blankSegData(&display1[3], 2, false);
 
     // Heading
-    if (showHeading) {
-        if (managedHeading) {
-            sevenSegment->blankSegData(&display1[5], 3, true);
-            sevenSegment->decimalSegData(&display1[5], 2);
-        }
-        sevenSegment->getSegData(&display1[5], 3, heading, 3);
+    if (managedHeading) {
+        sevenSegment->blankSegData(&display1[5], 3, true);
+        sevenSegment->decimalSegData(&display1[5], 2);
     }
     else {
-        sevenSegment->blankSegData(&display1[5], 3, false);
+        sevenSegment->getSegData(&display1[5], 3, heading, 3);
     }
 
     // Altitude
-    if (showAltitude) {
-        sevenSegment->getSegData(display2, 8, altitude, 5);
-        if (managedAltitude) {
-            sevenSegment->decimalSegData(display2, 7);
-        }
-    }
-    else {
-        sevenSegment->blankSegData(display2, 8, false);
+    sevenSegment->getSegData(display2, 8, altitude, 5);
+    if (managedAltitude) {
+        sevenSegment->decimalSegData(display2, 7);
     }
 
     // Vertical speed
-    if (showVerticalSpeed) {
-        if (autopilotAlt == VerticalSpeedHold) {
-            sevenSegment->getSegData(display3, 8, verticalSpeed, 4);
-        }
-        else {
-            sevenSegment->blankSegData(&display3[3], 5, true);
-        }
+    if (autopilotAlt == VerticalSpeedHold) {
+        sevenSegment->getSegData(display3, 8, verticalSpeed, 4);
     }
     else {
-        sevenSegment->blankSegData(display3, 8, false);
+        sevenSegment->blankSegData(&display3[3], 5, true);
     }
 
     sevenSegment->writeSegData3(display1, display2, display3);
@@ -111,10 +93,6 @@ void autopilot::update()
     if (aircraftChanged) {
         loadedAircraft = globals.aircraft;
         showMach = false;
-        showSpeed = false;
-        showHeading = false;
-        showAltitude = true;
-        showVerticalSpeed = false;
         mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
         heading = simVars->autopilotHeading;
@@ -125,8 +103,8 @@ void autopilot::update()
         prevAltitude = altitude;
         prevVerticalSpeed = verticalSpeed;
         setVerticalSpeed = 0;
-        managedSpeed = false;
-        managedHeading = false;
+        managedSpeed = true;
+        managedHeading = true;
         managedAltitude = true;
     }
 
@@ -135,23 +113,6 @@ void autopilot::update()
     gpioAltitudeInput();
     gpioVerticalSpeedInput();
     gpioButtonsInput();
-
-    // Show values if they get adjusted in sim
-    if (showHeading == false && heading != prevHeading) {
-        showHeading = true;
-    }
-
-    if (showSpeed == false && simVars->autopilotAirspeed != prevSpeed) {
-        showSpeed = true;
-    }
-
-    if (showAltitude == false && simVars->autopilotAltitude != prevAltitude) {
-        showAltitude = true;
-    }
-
-    if (showVerticalSpeed == false && simVars->autopilotVerticalSpeed != prevVerticalSpeed) {
-        showVerticalSpeed = true;
-    }
 
     // Only update local values from sim if they are not currently being
     // adjusted by the rotary encoders. This stops the displayed values
@@ -246,7 +207,6 @@ void autopilot::gpioSpeedInput()
 
         if (adjust != 0) {
             // Adjust speed
-            showSpeed = true;
             if (showMach) {
                 double newVal = adjustMach(adjust);
                 globals.simVars->write(KEY_AP_MACH_VAR_SET, newVal * 100);
@@ -327,7 +287,6 @@ void autopilot::gpioHeadingInput()
 
         if (adjust != 0) {
             // Adjust heading
-            showHeading = true;
             double newVal = adjustHeading(adjust);
             globals.simVars->write(KEY_HEADING_BUG_SET, newVal);
             prevHdgVal = val;
@@ -385,7 +344,6 @@ void autopilot::gpioAltitudeInput()
 
         if (adjust != 0) {
             // Adjust altitude
-            showAltitude = true;
             double newVal = adjustAltitude(adjust);
             globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
             if (setVerticalSpeed != 0) {
@@ -460,7 +418,6 @@ void autopilot::gpioVerticalSpeedInput()
 
         if (adjust != 0) {
             // Adjust vertical speed:
-            showVerticalSpeed = true;
             double newVal = adjustVerticalSpeed(adjust);
             globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
             if (setVerticalSpeed != 0) {
@@ -483,6 +440,7 @@ void autopilot::gpioVerticalSpeedInput()
         // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
+            manSelAltitude();
             globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
             globals.simVars->write(KEY_AP_ALT_HOLD_ON);
             manSelAltitude();
@@ -627,11 +585,6 @@ void autopilot::toggleFlightDirector()
     globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
     globals.simVars->write(KEY_AP_AIRSPEED_ON);
     globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-
-    showHeading = true;
-    showSpeed = true;
-    showAltitude = true;
-    showVerticalSpeed = true;
 }
 
 /// <summary>
@@ -695,9 +648,7 @@ void autopilot::captureCurrent()
 {
     int holdSpeed = simVars->asiAirspeed;
 
-    if (!showSpeed) {
-        showSpeed = true;
-
+    if (!managedSpeed) {
         // Set autopilot speed to within 5 knots of current speed
         int fives = holdSpeed % 5;
         if (fives < 3) {
@@ -710,15 +661,11 @@ void autopilot::captureCurrent()
 
     globals.simVars->write(KEY_AP_SPD_VAR_SET, holdSpeed);
 
-    if (!showHeading) {
-        showHeading = true;
+    if (!managedHeading) {
+        globals.simVars->write(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
 
-    globals.simVars->write(KEY_HEADING_BUG_SET, simVars->hiHeading);
-
-    if (!showAltitude) {
-        showAltitude = true;
-
+    if (!managedAltitude) {
         // Set autopilot altitude to within 100ft of current altitude
         int holdAlt = simVars->altAltitude;
         int hundreds = holdAlt % 100;
@@ -736,20 +683,6 @@ void autopilot::captureVerticalSpeed()
 {
     setVerticalSpeed = simVars->autopilotVerticalSpeed;
     setAltitude = simVars->autopilotAltitude;
-
-    if (!showVerticalSpeed) {
-        showVerticalSpeed = true;
-
-        // Make sure VS is in correct direction when first shown
-        if (setVerticalSpeed <= 0 && simVars->altAltitude < simVars->autopilotAltitude) {
-            setVerticalSpeed = 1000;
-        }
-        else if (setVerticalSpeed >= 0 && simVars->altAltitude > simVars->autopilotAltitude) {
-            setVerticalSpeed = -1000;
-        }
-
-        globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-    }
 }
 
 void autopilot::restoreVerticalSpeed()

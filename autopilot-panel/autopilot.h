@@ -36,10 +36,6 @@ private:
     AutopilotHdg autopilotHdg;
     AutopilotAlt autopilotAlt = AltHold;
     bool showMach = false;
-    bool showSpeed = false;
-    bool showHeading = false;
-    bool showAltitude = true;
-    bool showVerticalSpeed = false;
     double mach;
     double speed;
     int heading;
