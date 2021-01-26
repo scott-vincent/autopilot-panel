@@ -36,7 +36,7 @@ public:
     bool clockwise[MaxControls];
 
 public:
-    gpioctrl();
+    gpioctrl(bool initWiringPi);
     ~gpioctrl();
     int getSetting(const char* control, const char* controlType, const char* attribute);
     int addControl();

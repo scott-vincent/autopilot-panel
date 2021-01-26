@@ -32,9 +32,6 @@ private:
     unsigned char display1[8];
     unsigned char display2[8];
     unsigned char display3[8];
-    unsigned char prevDisplay1[8];
-    unsigned char prevDisplay2[8];
-    unsigned char prevDisplay3[8];
     AutopilotSpd autopilotSpd;
     AutopilotHdg autopilotHdg;
     AutopilotAlt autopilotAlt = AltHold;
@@ -101,7 +98,6 @@ public:
     void update();
 
 private:
-    void render7seg();
     void addGpio();
     void gpioSpeedInput();
     void gpioHeadingInput();

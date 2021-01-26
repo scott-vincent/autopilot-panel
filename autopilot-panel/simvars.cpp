@@ -106,12 +106,6 @@ void dataLink(simvars* t)
     long actualSize;
     int bytes;
 
-    // Detect if sim is active by looking for rpm variance.
-    // Want about 30 seconds of inactivity before we activate
-    // screensaver.
-    double lastRpm = 0;
-    int rpmMatch = 0;
-
     // Detect current aircraft and convert to an int.
     // We do this here to save having to do it for each instrument.
     globals.aircraft = NO_AIRCRAFT;
@@ -159,16 +153,6 @@ void dataLink(simvars* t)
                         fflush(stdout);
                         prevConnected = globals.connected;
                     }
-
-                    // Activate screensaver?
-                    if (t->simVars.rpmEngine == lastRpm && t->simVars.rpmPercent < 20) {
-                        rpmMatch++;
-                    }
-                    else {
-                        rpmMatch = 0;
-                        lastRpm = t->simVars.rpmEngine;
-                    }
-                    globals.active = (rpmMatch < 6000 && globals.electrics);
 
                     // Identify aircraft
                     if (strcmp(t->simVars.aircraft, lastAircraft) != 0) {
@@ -224,7 +208,7 @@ void dataLink(simvars* t)
 
         if (bytes == SOCKET_ERROR && globals.dataLinked) {
             globals.dataLinked = false;
-            globals.active = false;
+            globals.connected = false;
             globals.aircraft = NO_AIRCRAFT;
             strcpy(lastAircraft, "");
             printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
