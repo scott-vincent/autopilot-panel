@@ -3,8 +3,12 @@
 
 class sevensegment
 {
+private:
+	int channel;
+	unsigned char prevDisplay[3][8];	// Max 3 displays daisy chained
+
 public:
-	sevensegment(int channel);
+	sevensegment(bool initWiringPi, int spiChannel);
 	void getSegData(unsigned char* buf, int bufSize, int num, int fixedSize);
 	void blankSegData(unsigned char* buf, int bufSize, bool showMinus);
 	void decimalSegData(unsigned char* buf, int pos);
@@ -12,6 +16,7 @@ public:
 
 private:
 	void writeSegHex(int display, char* hex);
+	void writeSegData(int display, unsigned char* buf);
 };
 
 #endif // _SEVENSEGMENT_H_

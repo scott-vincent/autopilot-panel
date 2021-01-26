@@ -9,24 +9,19 @@ autopilot::autopilot()
     addGpio();
 
     // Initialise 7-segment displays
-    sevenSegment = new sevensegment(0);
-    prevDisplay1[0] = 'x';
-    prevDisplay2[0] = 'x';
-    prevDisplay3[0] = 'x';
+    sevenSegment = new sevensegment(false, 0);
 
     fflush(stdout);
 }
 
 void autopilot::render()
 {
-    if (!globals.connected || !globals.avionics) {
+    if (!globals.electrics) {
         // Turn off 7-segment displays
         sevenSegment->blankSegData(display1, 8, false);
         sevenSegment->blankSegData(display2, 8, false);
         sevenSegment->blankSegData(display3, 8, false);
         sevenSegment->writeSegData3(display1, display2, display3);
-
-        render7seg();
 
         // Turn off LEDS
         globals.gpioCtrl->writeLed(autopilotControl, false);
@@ -95,7 +90,7 @@ void autopilot::render()
         sevenSegment->blankSegData(display3, 8, false);
     }
 
-    render7seg();
+    sevenSegment->writeSegData3(display1, display2, display3);
 
     // Write LEDs
     globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
@@ -103,30 +98,6 @@ void autopilot::render()
     globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
     globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
     globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
-}
-
-void autopilot::render7seg()
-{
-    // Only update displays if something has changed
-    bool update = false;
-    for (int i = 0; i < 8; i++) {
-        if (display1[i] != prevDisplay1[i]) {
-            prevDisplay1[i] = display1[i];
-            update = true;
-        }
-        if (display2[i] != prevDisplay2[i]) {
-            prevDisplay2[i] = display2[i];
-            update = true;
-        }
-        if (display3[i] != prevDisplay3[i]) {
-            prevDisplay3[i] = display3[i];
-            update = true;
-        }
-    }
-
-    if (update) {
-        sevenSegment->writeSegData3(display1, display2, display3);
-    }
 }
 
 void autopilot::update()
@@ -150,8 +121,8 @@ void autopilot::update()
         prevAltitude = altitude;
         prevVerticalSpeed = verticalSpeed;
         setVerticalSpeed = 0;
-        managedSpeed = true;
-        managedHeading = true;
+        managedSpeed = false;
+        managedHeading = false;
         managedAltitude = true;
     }
 
@@ -370,18 +341,25 @@ void autopilot::gpioHeadingInput()
     val = globals.gpioCtrl->readPush(headingControl);
     if (val != INT_MIN) {
         if (prevHdgPush % 2 == 1) {
-            // Short press switches between managed and selected
-            if (autopilotHdg == HdgSet) {
-                autopilotHdg = LevelFlight;
-                globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
-                // Keep heading bug setting when heading hold turned off
-                globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
-                manSelHeading();
+            // Short press switches between managed and selected when flight
+            // director is active or toggles heading hold when it isn't.
+            if (simVars->flightDirectorActive) {
+                if (managedHeading) {
+                    // Keep heading bug setting when managed mode turned off
+                    globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                }
+            }
+            else if (autopilotHdg == HdgSet) {
+                    autopilotHdg = LevelFlight;
+                    globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
+                    // Keep heading bug setting when heading hold turned off
+                    globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
             }
             else {
                 autopilotHdg = HdgSet;
                 globals.simVars->write(KEY_AP_HDG_HOLD_ON);
             }
+            manSelHeading();
         }
         prevHdgPush = val;
     }
@@ -539,7 +517,6 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(machControl);
     if (val != INT_MIN) {
         if (prevMachPush % 2 == 1) {
-            printf("Mach push\n");
             // Swap between knots and mach
             machSwap();
         }

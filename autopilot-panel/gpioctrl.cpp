@@ -19,10 +19,13 @@ const int SPI_CE0 = 8;
 
 void watcher(gpioctrl*);
 
-gpioctrl::gpioctrl()
+gpioctrl::gpioctrl(bool initWiringPi)
 {
-    // Use BCM GPIO pin numbers
-    wiringPiSetupGpio();
+    // Caller may want to initialise wiringPi themselves
+    if (initWiringPi) {
+        // Use BCM GPIO pin numbers
+        wiringPiSetupGpio();
+    }
 
     // Reserve pins for SPI channel 0 with no MISO
     printf("Added SPI CE0 with no MISO: GPIO%d, GPIO%d, GPIO%d\n", SPI_MOSI, SPI_SCLK, SPI_CE0);
@@ -392,6 +395,10 @@ void watcher(gpioctrl *t)
             // Check control push
             if (t->gpio[control][Push] != INT_MIN) {
                 state = digitalRead(t->gpio[control][Push]);
+                //if (t->gpio[control][Push] == 4) {
+                //    printf("gpio %d state %d\n", t->gpio[control][Push], state);
+                //    fflush(stdout);
+                //}
                 if (state != t->lastPushState[control]) {
                     // If pressed increment value to next even number
                     // otherwise increment value to next odd number.

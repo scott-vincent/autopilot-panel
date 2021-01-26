@@ -46,7 +46,6 @@ struct globalVars
     bool quit = false;
     bool dataLinked = false;
     bool connected = false;
-    bool active = true;
     bool electrics = false;
     bool avionics = false;
 };
