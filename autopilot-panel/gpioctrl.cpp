@@ -19,10 +19,13 @@ const int SPI_CE0 = 8;
 
 void watcher(gpioctrl*);
 
-gpioctrl::gpioctrl()
+gpioctrl::gpioctrl(bool initWiringPi)
 {
-    // Use BCM GPIO pin numbers
-    wiringPiSetupGpio();
+    // Caller may want to initialise wiringPi themselves
+    if (initWiringPi) {
+        // Use BCM GPIO pin numbers
+        wiringPiSetupGpio();
+    }
 
     // Reserve pins for SPI channel 0 with no MISO
     printf("Added SPI CE0 with no MISO: GPIO%d, GPIO%d, GPIO%d\n", SPI_MOSI, SPI_SCLK, SPI_CE0);

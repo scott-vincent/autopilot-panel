@@ -31,21 +31,40 @@
 /// <summary>
 /// Specify Channel 0 if using CE0 or channel 1 if using CE1.
 /// </summary>
-sevensegment::sevensegment(int channel)
+sevensegment::sevensegment(bool initWiringPi, int spiChannel)
 {
     char hex[256];
 
-    // Init wiring pi, needed for delayMicroseconds
-    wiringPiSetupGpio();
+    channel = spiChannel;
 
-    // Init wiring pi SPI, bus speed is 10 MHz
-    wiringPiSPISetup(channel, 10000000);
+    // Caller may want to initialise wiringPi themselves
+    if (initWiringPi) {
+        // Init wiring pi, needed for delayMicroseconds
+        wiringPiSetupGpio();
+    }
 
-    // Intialise all 3 displays
-    strcpy(hex, "0f000c010a0309ff0b07010f020f030f040f050f060f070f080f");
+    // Init wiring pi SPI, get corruption at 10 MHz so use 1 MHz
+    wiringPiSPISetup(channel, 1000000);
+
+    // Intialise all 3 displays. Displays hyphens to show
+    // displays have been initialised successfully.
+    strcpy(hex, "0f000c010a0309ff0b07010a020a030a040a050a060a070a080a");
     writeSegHex(1, hex);
     writeSegHex(2, hex);
     writeSegHex(3, hex);
+
+    // Clear displays after a short delay
+    delayMicroseconds(1500000);
+    strcpy(hex, "010f020f030f040f050f060f070f080f");
+    writeSegHex(1, hex);
+    writeSegHex(2, hex);
+    writeSegHex(3, hex);
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 8; j++) {
+            prevDisplay[i][j] = 0x0f;
+        }
+    }
 }
 
 /// <summary>
@@ -98,16 +117,17 @@ void sevensegment::getSegData(unsigned char* buf, int bufSize, int num, int fixe
 
 /// <summary>
 /// Blanks the display at the specified position.
-/// If showMinus is true a minus is displayed at the rightmost position.
+/// If wantMinus is true minus signs are displayed instead of blanks.
 /// </summary>
-void sevensegment::blankSegData(unsigned char* buf, int bufSize, bool showMinus)
+void sevensegment::blankSegData(unsigned char* buf, int bufSize, bool wantMinus)
 {
     for (int pos = 0; pos < bufSize; pos++) {
-        buf[pos] = 0x0f;
-    }
-
-    if (showMinus) {
-        buf[bufSize-1] = 0x0a;
+        if (wantMinus) {
+            buf[pos] = 0x0a;
+        }
+        else {
+            buf[pos] = 0x0f;
+        }
     }
 }
 
@@ -117,44 +137,6 @@ void sevensegment::blankSegData(unsigned char* buf, int bufSize, bool showMinus)
 void sevensegment::decimalSegData(unsigned char* buf, int pos)
 {
     buf[pos] = buf[pos] | 0x80;
-}
-
-/// <summary>
-/// Takes 3 complete data buffers (8 chars each)
-/// and writes them to 3 displays concurrently.
-/// buf1 = left display, buf2 = middle, buf3 = right.
-/// </summary>
-void sevensegment::writeSegData3(unsigned char* buf1, unsigned char* buf2, unsigned char* buf3)
-{
-    unsigned char regData[6];
-
-    // Write to pos 8 on 3 displays, pos 7 on 3 displays etc.
-    int digitPos = 8;
-    for (int i = 0; i < 8; i++) {
-        regData[0] = digitPos;
-        regData[1] = buf3[i];
-        regData[2] = digitPos;
-        regData[3] = buf2[i];
-        regData[4] = digitPos;
-        regData[5] = buf1[i];
-        digitPos--;
-
-        wiringPiSPIDataRW(0, regData, 6);
-        delayMicroseconds(500);
-    }
-
-    // Display 3 can get corrupted so send its data again!
-    digitPos = 8;
-    for (int i = 0; i < 8; i++) {
-        regData[0] = digitPos;
-        regData[1] = buf3[i];
-        regData[2] = 0;  // No-op for display2
-        regData[4] = 0;  // No-op for display1
-        digitPos--;
-
-        wiringPiSPIDataRW(0, regData, 6);
-        delayMicroseconds(500);
-    }
 }
 
 /// <summary>
@@ -189,7 +171,49 @@ void sevensegment::writeSegHex(int display, char* hex)
             dataLen += 2;
         }
 
-        wiringPiSPIDataRW(0, regData, dataLen);
+        wiringPiSPIDataRW(channel, regData, dataLen);
         delayMicroseconds(500);
+    }
+}
+
+/// <summary>
+/// Takes 3 complete data buffers (8 chars each)
+/// and writes them to 3 displays concurrently.
+/// buf1 = left display, buf2 = middle, buf3 = right.
+/// </summary>
+void sevensegment::writeSegData3(unsigned char* buf1, unsigned char* buf2, unsigned char* buf3)
+{
+    // Display 0 is the last one (rightmost) in the chain
+    writeSegData(2, buf1);
+    writeSegData(1, buf2);
+    writeSegData(0, buf3);
+}
+
+/// <summary>
+/// Update a display but only write the digits that have changed.
+/// Display must be 0 (right), 1 (middle) or 2 (left)
+/// </summary>
+void sevensegment::writeSegData(int display, unsigned char* buf)
+{
+    unsigned char regData[6];
+
+    for (int i = 0; i < 8; i++) {
+        if (buf[i] != prevDisplay[display][i]) {
+            prevDisplay[display][i] = buf[i];
+
+            // Set no-op for all displays
+            regData[0] = 0;
+            regData[2] = 0;
+            regData[4] = 0;
+
+            // Replace no-op with digit for required display
+            // 1 = rightmost digit
+            regData[display * 2] = 8 - i;
+            regData[display * 2 + 1] = buf[i];
+
+            // Send the data for single digit, single display
+            wiringPiSPIDataRW(channel, regData, 6);
+            delayMicroseconds(500);
+        }
     }
 }

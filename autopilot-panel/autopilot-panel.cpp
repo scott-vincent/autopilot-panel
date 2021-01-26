@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <wiringPi.h>
 #include "gpioctrl.h"
 #include "globals.h"
 #include "settings.h"
@@ -24,9 +25,13 @@ autopilot* ap;
 /// </summary>
 void init(const char *settingsFile = NULL)
 {
+    // Init wiringPi ourselves as it is needed by both
+    // gpioCtrl and sevenSegment.
+    wiringPiSetupGpio();
+
     globals.allSettings = new settings(settingsFile);
     globals.simVars = new simvars();
-    globals.gpioCtrl = new gpioctrl();
+    globals.gpioCtrl = new gpioctrl(false);
 }
 
 /// <summary>
@@ -37,10 +42,10 @@ void updateCommon()
     SimVars* simVars = &globals.simVars->simVars;
 
     // Electrics check
-    globals.electrics = (simVars->dcVolts > 0);
+    globals.electrics = globals.connected && simVars->dcVolts > 0;
 
     // Avionics check
-    globals.avionics = (simVars->com1Status == 0 || simVars->com2Status == 0);
+    globals.avionics = globals.connected && (simVars->com1Status == 0 || simVars->com2Status == 0);
 }
 
 /// <summary>
