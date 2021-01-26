@@ -45,12 +45,6 @@ sevensegment::sevensegment(bool initWiringPi, int spiChannel)
 
     // Init wiring pi SPI, get corruption at 10 MHz so use 1 MHz
     wiringPiSPISetup(channel, 1000000);
-<<<<<<< HEAD
-
-    // Intialise all 3 displays. Displays hyphens to show
-    // displays have been initialised successfully.
-    strcpy(hex, "0f000c010a0309ff0b07010a020a030a040a050a060a070a080a");
-=======
 
     // Intialise all 3 displays. Displays hyphens to show
     // displays have been initialised successfully.
@@ -62,21 +56,10 @@ sevensegment::sevensegment(bool initWiringPi, int spiChannel)
     // Clear displays after a short delay
     delayMicroseconds(1500000);
     strcpy(hex, "010f020f030f040f050f060f070f080f");
->>>>>>> 4a3e4116aa88b3c2c7bb201631242cceb65a9d07
     writeSegHex(1, hex);
     writeSegHex(2, hex);
     writeSegHex(3, hex);
 
-<<<<<<< HEAD
-    // Clear displays after a short delay
-    delayMicroseconds(1500000);
-    strcpy(hex, "010f020f030f040f050f060f070f080f");
-    writeSegHex(1, hex);
-    writeSegHex(2, hex);
-    writeSegHex(3, hex);
-
-=======
->>>>>>> 4a3e4116aa88b3c2c7bb201631242cceb65a9d07
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 8; j++) {
             prevDisplay[i][j] = 0x0f;
