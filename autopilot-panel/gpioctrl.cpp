@@ -264,18 +264,16 @@ int gpioctrl::addLamp(const char* controlName)
 
 void gpioctrl::initPin(int pin, bool isInput)
 {
-    if (!isInput) {
-        pinMode(pin, OUTPUT);
-        return;
-    }
-
-    pinMode(pin, INPUT);
-
     char command[256];
 
     // NOTE: pullUpDnControl does not work on RasPi4 so have
     // to use raspi-gpio command line to pull up resistors.
-    sprintf(command, "raspi-gpio set %d pu", pin);
+    if (isInput) {
+        sprintf(command, "raspi-gpio set %d pu", pin);
+    }
+    else {
+        sprintf(command, "raspi-gpio set %d op", pin);
+    }
 
     if (system(command) != 0) {
         printf("Failed to run raspi-gpio command\n");
