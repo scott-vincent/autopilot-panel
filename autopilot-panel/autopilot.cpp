@@ -30,6 +30,9 @@ void autopilot::render()
         globals.gpioCtrl->writeLed(localiserControl, false);
         globals.gpioCtrl->writeLed(approachControl, false);
 
+        // Make sure settings get re-initialised
+        loadedAircraft = UNDEFINED;
+
         return;
     }
 
@@ -73,6 +76,7 @@ void autopilot::render()
         sevenSegment->getSegData(display3, 8, verticalSpeed, 4);
     }
     else {
+        sevenSegment->blankSegData(display3, 3, false);
         sevenSegment->blankSegData(&display3[3], 5, true);
     }
 
@@ -92,6 +96,7 @@ void autopilot::update()
     bool aircraftChanged = (loadedAircraft != globals.aircraft);
     if (aircraftChanged) {
         loadedAircraft = globals.aircraft;
+        airliner = (loadedAircraft != NO_AIRCRAFT && simVars->cruiseSpeed >= 300);
         showMach = false;
         mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
@@ -103,9 +108,13 @@ void autopilot::update()
         prevAltitude = altitude;
         prevVerticalSpeed = verticalSpeed;
         setVerticalSpeed = 0;
-        managedSpeed = true;
-        managedHeading = true;
-        managedAltitude = true;
+        if (airliner) {
+            if (simVars->asiAirspeed < 100) {
+                managedSpeed = true;
+            }
+            managedHeading = true;
+            managedAltitude = true;
+        }
     }
 
     gpioSpeedInput();
@@ -304,7 +313,27 @@ void autopilot::gpioHeadingInput()
     val = globals.gpioCtrl->readPush(headingControl);
     if (val != INT_MIN) {
         if (prevHdgPush % 2 == 1) {
-            // Short press switches between managed and selected when flight
+            // Short press switches between 5 degrees and 1 degree increments
+            if (hdgSetSel == 1) {
+                hdgSetSel = 0;
+            }
+            else {
+                hdgSetSel++;
+            }
+            time(&lastHdgPush);
+        }
+        if (val % 2 == 1) {
+            // Released
+            lastHdgPush = 0;
+        }
+        prevHdgPush = val;
+    }
+
+    // Heading long push (over 1 sec)
+    if (lastHdgPush > 0) {
+        time(&now);
+        if (now - lastHdgPush > 1) {
+            // Long press switches between managed and selected when flight
             // director is active or toggles heading hold when it isn't.
             if (simVars->flightDirectorActive) {
                 if (managedHeading) {
@@ -313,18 +342,18 @@ void autopilot::gpioHeadingInput()
                 }
             }
             else if (autopilotHdg == HdgSet) {
-                    autopilotHdg = LevelFlight;
-                    globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
-                    // Keep heading bug setting when heading hold turned off
-                    globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                autopilotHdg = LevelFlight;
+                globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
+                // Keep heading bug setting when heading hold turned off
+                globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
             }
             else {
                 autopilotHdg = HdgSet;
                 globals.simVars->write(KEY_AP_HDG_HOLD_ON);
             }
             manSelHeading();
+            lastHdgPush = 0;
         }
-        prevHdgPush = val;
     }
 }
 
@@ -554,7 +583,7 @@ void autopilot::toggleFlightDirector()
     globals.simVars->write(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
     // Adjust autopilot settings if just after take off
-    if (simVars->altAltitude > 2500 || simVars->vsiVerticalSpeed < 1) {
+    if (simVars->altAltitude > 3000 || simVars->vsiVerticalSpeed < 1) {
         return;
     }
 
@@ -593,6 +622,10 @@ void autopilot::toggleFlightDirector()
 /// </summary>
 void autopilot::manSelSpeed()
 {
+    if (!airliner) {
+        return;
+    }
+
     if (!simVars->flightDirectorActive) {
         managedSpeed = false;
     }
@@ -614,6 +647,10 @@ void autopilot::manSelSpeed()
 /// </summary>
 void autopilot::manSelHeading()
 {
+    if (!airliner) {
+        return;
+    }
+
     if (!simVars->flightDirectorActive) {
         managedHeading = false;
     }
@@ -635,6 +672,10 @@ void autopilot::manSelHeading()
 /// </summary>
 void autopilot::manSelAltitude()
 {
+    if (!airliner) {
+        return;
+    }
+
     managedAltitude = !managedAltitude;
     if (managedAltitude) {
         globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
@@ -733,7 +774,14 @@ double autopilot::adjustMach(int adjust)
 
 int autopilot::adjustHeading(int adjust)
 {
-    heading += adjust;
+    if (hdgSetSel == 0) {
+        // Adjust fives
+        heading += adjust * 5;
+    }
+    else {
+        heading += adjust;
+    }
+
     if (heading > 359) {
         heading -= 360;
     }

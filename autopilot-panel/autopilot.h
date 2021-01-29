@@ -27,6 +27,7 @@ private:
 
     SimVars* simVars;
     Aircraft loadedAircraft = UNDEFINED;
+    bool airliner = false;
     sevensegment* sevenSegment;
 
     unsigned char display1[8];
@@ -47,9 +48,9 @@ private:
     int prevVerticalSpeed;
     double setVerticalSpeed = 0;
     double setAltitude;
-    bool managedSpeed = true;
-    bool managedHeading = true;
-    bool managedAltitude = true;
+    bool managedSpeed = false;
+    bool managedHeading = false;
+    bool managedAltitude = false;
 
     // Hardware controls
     int speedControl = -1;
@@ -68,6 +69,7 @@ private:
     int spdSetSel = 0;
     int prevHdgVal = 0;
     int prevHdgPush = 0;
+    int hdgSetSel = 0;
     int prevAltVal = 0;
     int prevAltPush = 0;
     int altSetSel = 0;
@@ -83,6 +85,7 @@ private:
     time_t lastSpdAdjust = 0;
     time_t lastSpdPush = 0;
     time_t lastHdgAdjust = 0;
+    time_t lastHdgPush = 0;
     time_t lastAltAdjust = 0;
     time_t lastAltPush = 0;
     time_t lastVsAdjust = 0;
