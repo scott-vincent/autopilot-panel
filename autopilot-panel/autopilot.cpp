@@ -103,10 +103,6 @@ void autopilot::update()
         heading = simVars->autopilotHeading;
         altitude = simVars->autopilotAltitude;
         verticalSpeed = simVars->autopilotVerticalSpeed;
-        prevSpeed = speed;
-        prevHeading = heading;
-        prevAltitude = altitude;
-        prevVerticalSpeed = verticalSpeed;
         setVerticalSpeed = 0;
         if (airliner) {
             if (simVars->asiAirspeed < 100) {

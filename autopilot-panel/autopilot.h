@@ -42,10 +42,6 @@ private:
     int heading;
     int altitude;
     int verticalSpeed;
-    int prevSpeed;
-    int prevHeading;
-    int prevAltitude;
-    int prevVerticalSpeed;
     double setVerticalSpeed = 0;
     double setAltitude;
     bool managedSpeed = false;
