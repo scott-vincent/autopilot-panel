@@ -201,7 +201,7 @@ void autopilot::gpioSpeedInput()
     // Speed rotate
     int val = globals.gpioCtrl->readRotation(speedControl);
     if (val != INT_MIN) {
-        int diff = (val - prevSpdVal) / 2;
+        int diff = (val - prevSpdVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -281,7 +281,7 @@ void autopilot::gpioHeadingInput()
     // Heading rotate
     int val = globals.gpioCtrl->readRotation(headingControl);
     if (val != INT_MIN) {
-        int diff = (val - prevHdgVal) / 2;
+        int diff = (val - prevHdgVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -358,7 +358,7 @@ void autopilot::gpioAltitudeInput()
     // Altitude rotate
     int val = globals.gpioCtrl->readRotation(altitudeControl);
     if (val != INT_MIN) {
-        int diff = (val - prevAltVal) / 2;
+        int diff = (val - prevAltVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -432,7 +432,7 @@ void autopilot::gpioVerticalSpeedInput()
     // Vertical speed rotate
     int val = globals.gpioCtrl->readRotation(verticalSpeedControl);
     if (val != INT_MIN) {
-        int diff = (val - prevVsVal) / 2;
+        int diff = (val - prevVsVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
