@@ -177,7 +177,7 @@ void autopilot::update()
 
     // Alt hold can disengage when passing a waypoint so
     // re-enable and set previous altitude / vertical speed.
-    if (managedAltitude && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
+    if (managedAltitude && !simVars->autopilotGlideslopeHold && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
         restoreVerticalSpeed();
     }
 }
