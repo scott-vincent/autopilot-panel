@@ -300,7 +300,8 @@ void autopilot::gpioHeadingInput()
     }
     else if (lastHdgAdjust != 0) {
         time(&now);
-        if (now - lastHdgAdjust > 1) {
+        if (now - lastHdgAdjust > 2) {
+            hdgSetSel = 0;
             lastHdgAdjust = 0;
         }
     }
