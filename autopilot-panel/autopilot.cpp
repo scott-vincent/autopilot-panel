@@ -300,6 +300,7 @@ void autopilot::gpioSpeedInput()
                 }
             }
             manSelSpeed();
+            spdSetSel = 0;
             lastSpdPush = 0;
         }
     }
@@ -377,6 +378,7 @@ void autopilot::gpioHeadingInput()
                 globals.simVars->write(KEY_AP_HDG_HOLD_ON);
             }
             manSelHeading();
+            hdgSetSel = 0;
             lastHdgPush = 0;
         }
     }
@@ -449,6 +451,7 @@ void autopilot::gpioAltitudeInput()
             }
             manSelAltitude();
             setVerticalSpeed = 0;
+            altSetSel = 0;
             lastAltPush = 0;
         }
     }
