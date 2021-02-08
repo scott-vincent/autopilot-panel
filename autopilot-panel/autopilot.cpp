@@ -51,6 +51,9 @@ void autopilot::render()
     }
     else {
         sevenSegment->getSegData(display1, 3, speed + 0.5, 3);
+        if (spdSetSel == 1) {
+            sevenSegment->decimalSegData(display1, 1);
+        }
     }
 
     // Blank
@@ -63,6 +66,9 @@ void autopilot::render()
     }
     else {
         sevenSegment->getSegData(&display1[5], 3, heading, 3);
+        if (hdgSetSel == 1) {
+            sevenSegment->decimalSegData(&display1[5], 1);
+        }
     }
 
     // Altitude
@@ -83,11 +89,11 @@ void autopilot::render()
     sevenSegment->writeSegData3(display1, display2, display3);
 
     // Write LEDs
-    globals.gpioCtrl->writeLed(autopilotControl, simVars->autopilotEngaged);
-    globals.gpioCtrl->writeLed(flightDirectorControl, simVars->flightDirectorActive);
-    globals.gpioCtrl->writeLed(autothrottleControl, simVars->autothrottleActive);
-    globals.gpioCtrl->writeLed(localiserControl, simVars->autopilotApproachHold);
-    globals.gpioCtrl->writeLed(approachControl, simVars->autopilotGlideslopeHold);
+    globals.gpioCtrl->writeLed(autopilotControl, apEnabled);
+    globals.gpioCtrl->writeLed(flightDirectorControl, fdEnabled);
+    globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
+    globals.gpioCtrl->writeLed(localiserControl, locEnabled);
+    globals.gpioCtrl->writeLed(approachControl, apprEnabled);
 }
 
 void autopilot::update()
@@ -103,6 +109,11 @@ void autopilot::update()
         heading = simVars->autopilotHeading;
         altitude = simVars->autopilotAltitude;
         verticalSpeed = simVars->autopilotVerticalSpeed;
+        apEnabled = simVars->autopilotEngaged;
+        fdEnabled = simVars->flightDirectorActive;
+        athrEnabled = simVars->autothrottleActive;
+        locEnabled = simVars->autopilotApproachHold;
+        apprEnabled = simVars->autopilotGlideslopeHold;
         setVerticalSpeed = 0;
         if (airliner) {
             if (simVars->asiAirspeed < 100) {
@@ -113,6 +124,7 @@ void autopilot::update()
         }
     }
 
+    time(&now);
     gpioSpeedInput();
     gpioHeadingInput();
     gpioAltitudeInput();
@@ -134,6 +146,21 @@ void autopilot::update()
     }
     if (lastVsAdjust == 0) {
         verticalSpeed = simVars->autopilotVerticalSpeed;
+    }
+    if (lastApAdjust == 0) {
+        apEnabled = simVars->autopilotEngaged;
+    }
+    if (lastFdAdjust == 0) {
+        fdEnabled = simVars->flightDirectorActive;
+    }
+    if (lastAthrAdjust == 0) {
+        athrEnabled = simVars->autothrottleActive;
+    }
+    if (lastLocAdjust == 0) {
+        locEnabled = simVars->autopilotApproachHold;
+    }
+    if (lastApprAdjust == 0) {
+        apprEnabled = simVars->autopilotGlideslopeHold;
     }
 
     if (simVars->autopilotAirspeedHold == 1) {
@@ -177,7 +204,7 @@ void autopilot::update()
 
     // Alt hold can disengage when passing a waypoint so
     // re-enable and set previous altitude / vertical speed.
-    if (managedAltitude && !simVars->autopilotGlideslopeHold && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
+    if (managedAltitude && !apprEnabled && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
         restoreVerticalSpeed();
     }
 }
@@ -226,7 +253,6 @@ void autopilot::gpioSpeedInput()
     }
     else if (lastSpdAdjust != 0) {
         // Reset digit set selection if more than 2 seconds since last adjustment
-        time(&now);
         if (now - lastSpdAdjust > 2) {
             spdSetSel = 0;
             lastSpdAdjust = 0;
@@ -238,11 +264,12 @@ void autopilot::gpioSpeedInput()
     if (val != INT_MIN) {
         if (prevSpdPush % 2 == 1) {
             // Short press switches between 5 knot and 1 knot increments
-            if (spdSetSel == 1) {
-                spdSetSel = 0;
+            // Default is 5 knots
+            if (spdSetSel == 0) {
+                spdSetSel = 1;
             }
             else {
-                spdSetSel++;
+                spdSetSel = 0;
             }
             time(&lastSpdPush);
         }
@@ -255,7 +282,6 @@ void autopilot::gpioSpeedInput()
 
     // Speed long push (over 1 sec)
     if (lastSpdPush > 0) {
-        time(&now);
         if (now - lastSpdPush > 1) {
             // Long press switches between managed and selected
             if (autopilotSpd == SpdHold) {
@@ -299,7 +325,6 @@ void autopilot::gpioHeadingInput()
         time(&lastHdgAdjust);
     }
     else if (lastHdgAdjust != 0) {
-        time(&now);
         if (now - lastHdgAdjust > 2) {
             hdgSetSel = 0;
             lastHdgAdjust = 0;
@@ -310,12 +335,13 @@ void autopilot::gpioHeadingInput()
     val = globals.gpioCtrl->readPush(headingControl);
     if (val != INT_MIN) {
         if (prevHdgPush % 2 == 1) {
-            // Short press switches between 5 degrees and 1 degree increments
-            if (hdgSetSel == 1) {
-                hdgSetSel = 0;
+            // Short press switches between 1 degree and 5 degree increments
+            // Default is 1 degree
+            if (hdgSetSel == 0) {
+                hdgSetSel = 1;
             }
             else {
-                hdgSetSel++;
+                hdgSetSel = 0;
             }
             time(&lastHdgPush);
         }
@@ -328,11 +354,10 @@ void autopilot::gpioHeadingInput()
 
     // Heading long push (over 1 sec)
     if (lastHdgPush > 0) {
-        time(&now);
         if (now - lastHdgPush > 1) {
             // Long press switches between managed and selected when flight
             // director is active or toggles heading hold when it isn't.
-            if (simVars->flightDirectorActive) {
+            if (fdEnabled) {
                 if (managedHeading) {
                     // Keep heading bug setting when managed mode turned off
                     globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
@@ -381,7 +406,6 @@ void autopilot::gpioAltitudeInput()
     }
     else if (lastAltAdjust != 0) {
         // Reset digit set selection if more than 2 seconds since last adjustment
-        time(&now);
         if (now - lastAltAdjust > 2) {
             altSetSel = 0;
             lastAltAdjust = 0;
@@ -410,7 +434,6 @@ void autopilot::gpioAltitudeInput()
 
     // Altitude long push (over 1 sec)
     if (lastAltPush > 0) {
-        time(&now);
         if (now - lastAltPush > 1) {
             // Long press switches between managed and selected
             if (autopilotAlt == AltHold) {
@@ -454,7 +477,6 @@ void autopilot::gpioVerticalSpeedInput()
         time(&lastVsAdjust);
     }
     else if (lastVsAdjust != 0) {
-        time(&now);
         if (now - lastVsAdjust > 1) {
             lastVsAdjust = 0;
         }
@@ -482,24 +504,42 @@ void autopilot::gpioButtonsInput()
     int val = globals.gpioCtrl->readPush(autopilotControl);
     if (val != INT_MIN) {
         if (prevApPush % 2 == 1) {
-            // Capture current values if autopilot is about to be engaged
-            if (!simVars->autopilotEngaged) {
+            // Toggle autopilot
+            apEnabled = !apEnabled;
+            globals.gpioCtrl->writeLed(autopilotControl, apEnabled);
+
+            // Capture current values if autopilot has been engaged
+            if (apEnabled) {
                 captureCurrent();
             }
             globals.simVars->write(KEY_AP_MASTER);
         }
         prevApPush = val;
+        time(&lastApAdjust);
+    }
+    else if (lastApAdjust != 0) {
+        if (now - lastApAdjust > 1) {
+            lastApAdjust = 0;
+        }
     }
 
     // Flight Director push
     val = globals.gpioCtrl->readPush(flightDirectorControl);
     if (val != INT_MIN) {
         if (prevFdPush % 2 == 1) {
-            // Pressed
-            printf("Toggle flight director\n");
+            // Toggle flight director
+            fdEnabled = !fdEnabled;
+            globals.gpioCtrl->writeLed(flightDirectorControl, fdEnabled);
+
             toggleFlightDirector();
         }
         prevFdPush = val;
+        time(&lastFdAdjust);
+    }
+    else if (lastFdAdjust != 0) {
+        if (now - lastFdAdjust > 1) {
+            lastFdAdjust = 0;
+        }
     }
 
     // Mach push
@@ -516,38 +556,65 @@ void autopilot::gpioButtonsInput()
     val = globals.gpioCtrl->readPush(autothrottleControl);
     if (val != INT_MIN) {
         if (prevAthrPush % 2 == 1) {
-            // Toggle auto throttle
+            // Toggle autothrottle
+            athrEnabled = !athrEnabled;
+            globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
+
             globals.simVars->write(KEY_AUTO_THROTTLE_ARM);
         }
         prevAthrPush = val;
+        time(&lastAthrAdjust);
+    }
+    else if (lastAthrAdjust != 0) {
+        if (now - lastAthrAdjust > 1) {
+            lastAthrAdjust = 0;
+        }
     }
 
     // Localiser push
     val = globals.gpioCtrl->readPush(localiserControl);
     if (val != INT_MIN) {
         if (prevLocPush % 2 == 1) {
-            // Pressed
-            if (simVars->autopilotGlideslopeHold) {
+            // Toggle localiser
+            locEnabled = !locEnabled;
+            globals.gpioCtrl->writeLed(localiserControl, locEnabled);
+
+            if (apprEnabled) {
                 globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
             globals.simVars->write(KEY_AP_LOC_HOLD);
         }
         prevLocPush = val;
+        time(&lastLocAdjust);
+    }
+    else if (lastLocAdjust != 0) {
+        if (now - lastLocAdjust > 1) {
+            lastLocAdjust = 0;
+        }
     }
 
     // Approach push
     val = globals.gpioCtrl->readPush(approachControl);
     if (val != INT_MIN) {
         if (prevApprPush % 2 == 1) {
-            // Pressed
-            if (simVars->autopilotGlideslopeHold) {
-                globals.simVars->write(KEY_AP_APR_HOLD_OFF);
+            // Toggle approach
+            apprEnabled = !apprEnabled;
+            globals.gpioCtrl->writeLed(approachControl, apprEnabled);
+
+            if (apprEnabled) {
+                globals.simVars->write(KEY_AP_APR_HOLD_ON);
             }
             else {
-                globals.simVars->write(KEY_AP_APR_HOLD_ON);
+                globals.simVars->write(KEY_AP_APR_HOLD_OFF);
             }
         }
         prevApprPush = val;
+        time(&lastApprAdjust);
+    }
+    else if (lastApprAdjust != 0) {
+        if (now - lastApprAdjust > 1) {
+            lastApprAdjust = 0;
+        }
     }
 }
 
@@ -576,7 +643,6 @@ void autopilot::machSwap()
 /// </summary>
 void autopilot::toggleFlightDirector()
 {
-    bool turnedOn = !(simVars->flightDirectorActive);
     globals.simVars->write(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
     // Adjust autopilot settings if just after take off
@@ -594,7 +660,7 @@ void autopilot::toggleFlightDirector()
     managedAltitude = true;
     globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
 
-    if (turnedOn) {
+    if (fdEnabled) {
         // Use managed heading if FD turned on
         managedHeading = true;
         globals.simVars->write(KEY_HEADING_SLOT_INDEX_SET, 2);
@@ -623,7 +689,7 @@ void autopilot::manSelSpeed()
         return;
     }
 
-    if (!simVars->flightDirectorActive) {
+    if (!fdEnabled) {
         managedSpeed = false;
     }
     else {
@@ -648,7 +714,7 @@ void autopilot::manSelHeading()
         return;
     }
 
-    if (!simVars->flightDirectorActive) {
+    if (!fdEnabled) {
         managedHeading = false;
     }
     else {
@@ -726,7 +792,7 @@ void autopilot::captureVerticalSpeed()
 void autopilot::restoreVerticalSpeed()
 {
     // Ignore if autopilot disabled or altitude already reached
-    if (!simVars->autopilotEngaged ||
+    if (!apEnabled ||
         (setVerticalSpeed < 0 && simVars->altAltitude < simVars->autopilotAltitude) ||
         (setVerticalSpeed > 0 && simVars->altAltitude > simVars->autopilotAltitude)) {
         setVerticalSpeed = 0;
@@ -772,11 +838,11 @@ double autopilot::adjustMach(int adjust)
 int autopilot::adjustHeading(int adjust)
 {
     if (hdgSetSel == 0) {
-        // Adjust fives
-        heading += adjust * 5;
+        heading += adjust;
     }
     else {
-        heading += adjust;
+        // Adjust fives
+        heading += adjust * 5;
     }
 
     if (heading > 359) {

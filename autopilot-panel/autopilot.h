@@ -42,6 +42,11 @@ private:
     int heading;
     int altitude;
     int verticalSpeed;
+    bool apEnabled;
+    bool fdEnabled;
+    bool athrEnabled;
+    bool locEnabled;
+    bool apprEnabled;
     double setVerticalSpeed = 0;
     double setAltitude;
     bool managedSpeed = false;
@@ -85,6 +90,11 @@ private:
     time_t lastAltAdjust = 0;
     time_t lastAltPush = 0;
     time_t lastVsAdjust = 0;
+    time_t lastApAdjust = 0;
+    time_t lastFdAdjust = 0;
+    time_t lastAthrAdjust = 0;
+    time_t lastLocAdjust = 0;
+    time_t lastApprAdjust = 0;
     time_t now;
 
 public:
