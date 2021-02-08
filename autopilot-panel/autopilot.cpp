@@ -73,6 +73,9 @@ void autopilot::render()
 
     // Altitude
     sevenSegment->getSegData(display2, 8, altitude, 5);
+    if (altSetSel == 1) {
+        sevenSegment->decimalSegData(display2, 4);
+    }
     if (managedAltitude) {
         sevenSegment->decimalSegData(display2, 7);
     }
