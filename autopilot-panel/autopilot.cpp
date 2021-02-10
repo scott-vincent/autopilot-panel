@@ -274,6 +274,7 @@ void autopilot::gpioSpeedInput()
             else {
                 spdSetSel = 0;
             }
+            time(&lastSpdAdjust);
             time(&lastSpdPush);
         }
         if (val % 2 == 1) {
@@ -347,6 +348,7 @@ void autopilot::gpioHeadingInput()
             else {
                 hdgSetSel = 0;
             }
+            time(&lastHdgAdjust);
             time(&lastHdgPush);
         }
         if (val % 2 == 1) {
@@ -428,6 +430,7 @@ void autopilot::gpioAltitudeInput()
             else {
                 altSetSel++;
             }
+            time(&lastAltAdjust);
             time(&lastAltPush);
         }
         if (val % 2 == 1) {
