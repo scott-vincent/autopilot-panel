@@ -652,6 +652,10 @@ void autopilot::machSwap()
 /// </summary>
 void autopilot::toggleFlightDirector()
 {
+    if (!airliner) {
+        return;
+    }
+
     globals.simVars->write(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
     // Adjust autopilot settings if just after take off
@@ -694,11 +698,7 @@ void autopilot::toggleFlightDirector()
 /// </summary>
 void autopilot::manSelSpeed()
 {
-    if (!airliner) {
-        return;
-    }
-
-    if (!fdEnabled) {
+    if (!airliner || !fdEnabled) {
         managedSpeed = false;
     }
     else {
@@ -719,11 +719,7 @@ void autopilot::manSelSpeed()
 /// </summary>
 void autopilot::manSelHeading()
 {
-    if (!airliner) {
-        return;
-    }
-
-    if (!fdEnabled) {
+    if (!airliner || !fdEnabled) {
         managedHeading = false;
     }
     else {
@@ -745,10 +741,12 @@ void autopilot::manSelHeading()
 void autopilot::manSelAltitude()
 {
     if (!airliner) {
-        return;
+        managedAltitude = false;
+    }
+    else {
+        managedAltitude = !managedAltitude;
     }
 
-    managedAltitude = !managedAltitude;
     if (managedAltitude) {
         globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
     }
