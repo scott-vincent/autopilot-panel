@@ -118,6 +118,9 @@ void autopilot::update()
         locEnabled = simVars->autopilotApproachHold;
         apprEnabled = simVars->autopilotGlideslopeHold;
         setVerticalSpeed = 0;
+        managedSpeed = false;
+        managedHeading = false;
+        managedAltitude = false;
         if (airliner) {
             if (simVars->asiAirspeed < 100) {
                 managedSpeed = true;
@@ -340,7 +343,7 @@ void autopilot::gpioHeadingInput()
     val = globals.gpioCtrl->readPush(headingControl);
     if (val != INT_MIN) {
         if (prevHdgPush % 2 == 1) {
-            // Short press switches between 1 degree and 5 degree increments
+            // Short press switches between 5 degree and 1 degree increments
             // Default is 1 degree
             if (hdgSetSel == 0) {
                 hdgSetSel = 1;
@@ -845,11 +848,11 @@ double autopilot::adjustMach(int adjust)
 int autopilot::adjustHeading(int adjust)
 {
     if (hdgSetSel == 0) {
-        heading += adjust;
-    }
-    else {
         // Adjust fives
         heading += adjust * 5;
+    }
+    else {
+        heading += adjust;
     }
 
     if (heading > 359) {
