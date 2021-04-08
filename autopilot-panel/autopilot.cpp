@@ -102,7 +102,7 @@ void autopilot::render()
 void autopilot::update()
 {
     // Check for aircraft change
-    bool aircraftChanged = (loadedAircraft != globals.aircraft);
+    bool aircraftChanged = (globals.electrics && loadedAircraft != globals.aircraft);
     if (aircraftChanged) {
         loadedAircraft = globals.aircraft;
         airliner = (loadedAircraft != NO_AIRCRAFT && simVars->cruiseSpeed >= 300);
