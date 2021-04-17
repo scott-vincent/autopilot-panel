@@ -6,6 +6,7 @@ g++ -lwiringPi -lpthread  \
     settings.cpp \
     simvarDefs.cpp \
     simvars.cpp \
+    globals.cpp \
     gpioctrl.cpp \
     sevensegment.cpp \
     autopilot.cpp \

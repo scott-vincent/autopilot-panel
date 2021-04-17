@@ -26,10 +26,7 @@ private:
 
     SOCKET writeSockfd = INVALID_SOCKET;
     sockaddr_in writeAddr;
-    struct {
-        long bytes;
-        WriteData writeData;
-    } sendBuffer;
+    Request request;
 
 public:
     simvars();

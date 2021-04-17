@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="autopilot-panel.cpp" />
     <ClCompile Include="autopilot.cpp" />
+    <ClCompile Include="globals.cpp" />
     <ClCompile Include="gpioctrl.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="sevensegment.cpp" />

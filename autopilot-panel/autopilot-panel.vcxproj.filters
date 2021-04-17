@@ -8,6 +8,7 @@
     <ClCompile Include="gpioctrl.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="sevensegment.cpp" />
+    <ClCompile Include="globals.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simvars.h" />
