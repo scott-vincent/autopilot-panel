@@ -7,8 +7,10 @@
 const char *DataLinkGroup = "Data Link";
 char dataLinkHost[64];
 int dataLinkPort;
-
 extern const char* SimVarDefs[][2];
+bool prevConnected = false;
+long dataSize;
+Request request;
 char deltaData[2048];
 
 void dataLink(simvars*);
@@ -48,9 +50,9 @@ void simvars::write(EVENT_ID eventId, double value)
         return;
     }
 
-    request.requestedSize = sizeof(WriteData);
-    request.writeData.eventId = eventId;
-    request.writeData.value = value;
+    writeRequest.requestedSize = sizeof(WriteData);
+    writeRequest.writeData.eventId = eventId;
+    writeRequest.writeData.value = value;
 
     if (writeSockfd == INVALID_SOCKET) {
         if ((writeSockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
@@ -67,7 +69,7 @@ void simvars::write(EVENT_ID eventId, double value)
         inet_pton(AF_INET, dataLinkHost, &writeAddr.sin_addr);
     }
 
-    int bytes = sendto(writeSockfd, (char*)&request, sizeof(request), 0, (SOCKADDR*)&writeAddr, sizeof(writeAddr));
+    int bytes = sendto(writeSockfd, (char*)&writeRequest, sizeof(writeRequest), 0, (SOCKADDR*)&writeAddr, sizeof(writeAddr));
     if (bytes <= 0) {
         printf("Failed to write event %d\n", eventId);
         fflush(stdout);
@@ -75,11 +77,69 @@ void simvars::write(EVENT_ID eventId, double value)
 }
 
 /// <summary>
+/// Re-initialise everything when connection lost
+/// </summary>
+void resetConnection(simvars* thisPtr)
+{
+    // Only want a subset of SimVars for Autopilot panel (to save bandwidth)
+    dataSize = (long)(&thisPtr->simVars.autothrottleActive) + sizeof(double) - (long)&thisPtr->simVars;
+    request.requestedSize = dataSize;
+
+    // Want full data on first connect
+    request.wantFullData = 1;
+
+    globals.dataLinked = false;
+    globals.connected = false;
+    globals.aircraft = NO_AIRCRAFT;
+    strcpy(globals.lastAircraft, "");
+
+    printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+    fflush(stdout);
+}
+
+/// <summary>
+/// New data received so perform various checks
+/// </summary>
+void processData(simvars* thisPtr)
+{
+    globals.connected = (thisPtr->simVars.connected == 1);
+
+    if (!globals.dataLinked) {
+        globals.dataLinked = true;
+        printf("Established Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
+        if (!globals.connected) {
+            printf("Waiting for MS FS2020\n");
+        }
+        fflush(stdout);
+    }
+
+    if (globals.connected != prevConnected) {
+        if (globals.connected) {
+            printf("Connected to MS FS2020\n");
+        }
+        else {
+            printf("Waiting for MS FS2020\n");
+        }
+        fflush(stdout);
+        prevConnected = globals.connected;
+    }
+
+    identifyAircraft(thisPtr->simVars.aircraft);
+}
+
+/// <summary>
 /// A separate thread constantly collects the latest
 /// SimVar values from instrument-data-link.
 /// </summary>
-void dataLink(simvars* t)
+void dataLink(simvars* thisPtr)
 {
+    timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500000;
+    long actualSize;
+    int bytes;
+    int selFail = 0;
+
     // Create a UDP socket
     SOCKET sockfd;
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
@@ -99,27 +159,7 @@ void dataLink(simvars* t)
         exit(1);
     }
 
-    timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 500000;
-
-    // Only want a subset of SimVars for Autopilot panel (to save bandwidth)
-    long dataSize = (long)(&t->simVars.autothrottleActive) + sizeof(double) - (long)&t->simVars;
-    Request request;
-    request.requestedSize = dataSize;
-    request.wantFullData = 1;   // Want full data on first connect
-    long actualSize;
-    int bytes;
-
-    // Detect current aircraft and convert to an int.
-    // We do this here to save having to do it for each instrument.
-    globals.aircraft = NO_AIRCRAFT;
-    strcpy(globals.lastAircraft, "");
-
-    printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
-    fflush(stdout);
-    bool prevConnected = false;
-    int selFail = 0;
+    resetConnection(thisPtr);
 
     while (!globals.quit) {
         // Poll instrument data link
@@ -136,45 +176,27 @@ void dataLink(simvars* t)
                 // Receive latest data (delta will never be larger than full data size)
                 bytes = recv(sockfd, deltaData, dataSize, 0);
 
-                if (bytes == dataSize) {
-                    // Full data received
-                    memcpy((char*)&t->simVars, deltaData, dataSize);
-                    request.wantFullData = 0;   // Want deltas from now on
-                    globals.connected = (t->simVars.connected == 1);
-
-                    if (!globals.dataLinked) {
-                        globals.dataLinked = true;
-                        printf("Established Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
-                        if (!globals.connected) {
-                            printf("Waiting for MS FS2020\n");
-                        }
-                        fflush(stdout);
-                    }
-
-                    if (globals.connected != prevConnected) {
-                        if (globals.connected) {
-                            printf("Connected to MS FS2020\n");
-                        }
-                        else {
-                            printf("Waiting for MS FS2020\n");
-                        }
-                        fflush(stdout);
-                        prevConnected = globals.connected;
-                    }
-
-                    identifyAircraft(t->simVars.aircraft);
-                }
-                else if (bytes == sizeof(long)) {
+                if (bytes == sizeof(long)) {
                     // Data size mismatch
-                    memcpy(&actualSize, &t->simVars, sizeof(long));
+                    memcpy(&actualSize, &thisPtr->simVars, sizeof(long));
                     printf("DataLink: Requested %ld bytes but server sent %ld bytes\n", dataSize, actualSize);
                     fflush(stdout);
                     exit(1);
                 }
                 else if (bytes > 0) {
-                    // Delta received
-                    receiveDelta(deltaData, bytes, (char*)&t->simVars);
-                    identifyAircraft(t->simVars.aircraft);
+                    if (bytes == dataSize) {
+                        // Full data received
+                        memcpy((char*)&thisPtr->simVars, deltaData, dataSize);
+
+                        // Want deltas from now on
+                        request.wantFullData = 0;
+                    }
+                    else {
+                        // Delta received
+                        receiveDelta(deltaData, bytes, (char*)&thisPtr->simVars);
+                    }
+
+                    processData(thisPtr);
                 }
                 else {
                     bytes = SOCKET_ERROR;
@@ -193,13 +215,7 @@ void dataLink(simvars* t)
         }
 
         if (bytes == SOCKET_ERROR && globals.dataLinked) {
-            globals.dataLinked = false;
-            globals.connected = false;
-            globals.aircraft = NO_AIRCRAFT;
-            strcpy(globals.lastAircraft, "");
-            request.wantFullData = 1;
-            printf("Waiting for Data Link at %s:%d\n", dataLinkHost, dataLinkPort);
-            fflush(stdout);
+            resetConnection(thisPtr);
         }
 
         // Update 16 times per second

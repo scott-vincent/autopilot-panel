@@ -26,7 +26,7 @@ private:
 
     SOCKET writeSockfd = INVALID_SOCKET;
     sockaddr_in writeAddr;
-    Request request;
+    Request writeRequest;
 
 public:
     simvars();
