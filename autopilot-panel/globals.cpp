@@ -45,6 +45,8 @@ void identifyAircraft(char* aircraft)
             }
         }
         strcpy(globals.lastAircraft, aircraft);
+        printf("Aircraft: %s\n", aircraft);
+        fflush(stdout);
     }
 }
 
