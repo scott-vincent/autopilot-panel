@@ -210,9 +210,74 @@ void autopilot::update()
 
     // Alt hold can disengage when passing a waypoint so
     // re-enable and set previous altitude / vertical speed.
-    if (managedAltitude && !apprEnabled && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
-        restoreVerticalSpeed();
+    //if (managedAltitude && !apprEnabled && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
+    //    restoreVerticalSpeed();
+    //}
+}
+
+void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
+{
+    if (loadedAircraft == FBW_A320NEO) {
+        // Convert events to A32NX specific events
+        switch (id) {
+        case KEY_AP_HDG_HOLD_OFF:
+            id = A32NX_FCU_HDG_PUSH;
+            break;
+        case KEY_AP_HDG_HOLD_ON:
+            id = A32NX_FCU_HDG_PULL;
+            break;
+        case KEY_AP_ALT_HOLD_OFF:
+            id = A32NX_FCU_ALT_PUSH;
+            break;
+        case KEY_AP_ALT_HOLD_ON:
+            id = A32NX_FCU_ALT_PULL;
+            break;
+        case KEY_AP_VS_VAR_SET_ENGLISH:
+            if (value == 0) {
+                globals.simVars->write(A32NX_FCU_VS_PUSH);
+            }
+            else {
+                globals.simVars->write(A32NX_FCU_VS_PULL);
+            }
+            break;
+        case KEY_AP_APR_HOLD_OFF:
+            // Don't toggle if already in required state
+            if (simVars->jbApprMode == 0) return;
+            id = A32NX_FCU_APPR_PUSH;
+            break;
+        case KEY_AP_APR_HOLD_ON:
+            // Don't toggle if already in required state
+            if (simVars->jbApprMode == 1) return;
+            id = A32NX_FCU_APPR_PUSH;
+            break;
+        case KEY_SPEED_SLOT_INDEX_SET:
+            if (value == 2) {
+                id = A32NX_FCU_SPD_PUSH;
+            }
+            else {
+                id = A32NX_FCU_SPD_PULL;
+            }
+            break;
+        case KEY_HEADING_SLOT_INDEX_SET:
+            if (value == 2) {
+                id = A32NX_FCU_HDG_PUSH;
+            }
+            else {
+                id = A32NX_FCU_HDG_PULL;
+            }
+            break;
+        case KEY_ALTITUDE_SLOT_INDEX_SET:
+            if (value == 2) {
+                id = A32NX_FCU_ALT_PUSH;
+            }
+            else {
+                id = A32NX_FCU_ALT_PULL;
+            }
+            break;
+        }
     }
+
+    globals.simVars->write(id, value);
 }
 
 void autopilot::addGpio()
@@ -247,11 +312,11 @@ void autopilot::gpioSpeedInput()
             // Adjust speed
             if (showMach) {
                 double newVal = adjustMach(adjust);
-                globals.simVars->write(KEY_AP_MACH_VAR_SET, newVal * 100);
+                sendEvent(KEY_AP_MACH_VAR_SET, newVal * 100);
             }
             else {
                 double newVal = adjustSpeed(adjust);
-                globals.simVars->write(KEY_AP_SPD_VAR_SET, newVal);
+                sendEvent(KEY_AP_SPD_VAR_SET, newVal);
             }
             prevSpdVal = val;
         }
@@ -292,15 +357,15 @@ void autopilot::gpioSpeedInput()
         if (now - lastSpdPush > 1) {
             // Long press switches between managed and selected
             if (autopilotSpd == SpdHold) {
-                globals.simVars->write(KEY_AP_MACH_OFF);
-                globals.simVars->write(KEY_AP_AIRSPEED_OFF);
+                sendEvent(KEY_AP_MACH_OFF);
+                sendEvent(KEY_AP_AIRSPEED_OFF);
             }
             else {
                 if (showMach) {
-                    globals.simVars->write(KEY_AP_MACH_ON);
+                    sendEvent(KEY_AP_MACH_ON);
                 }
                 else {
-                    globals.simVars->write(KEY_AP_AIRSPEED_ON);
+                    sendEvent(KEY_AP_AIRSPEED_ON);
                 }
             }
             manSelSpeed();
@@ -327,7 +392,7 @@ void autopilot::gpioHeadingInput()
         if (adjust != 0) {
             // Adjust heading
             double newVal = adjustHeading(adjust);
-            globals.simVars->write(KEY_HEADING_BUG_SET, newVal);
+            sendEvent(KEY_HEADING_BUG_SET, newVal);
             prevHdgVal = val;
         }
         time(&lastHdgAdjust);
@@ -369,18 +434,18 @@ void autopilot::gpioHeadingInput()
             if (fdEnabled) {
                 if (managedHeading) {
                     // Keep heading bug setting when managed mode turned off
-                    globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                    sendEvent(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
                 }
             }
             else if (autopilotHdg == HdgSet) {
                 autopilotHdg = LevelFlight;
-                globals.simVars->write(KEY_AP_HDG_HOLD_OFF);
+                sendEvent(KEY_AP_HDG_HOLD_OFF);
                 // Keep heading bug setting when heading hold turned off
-                globals.simVars->write(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                sendEvent(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
             }
             else {
                 autopilotHdg = HdgSet;
-                globals.simVars->write(KEY_AP_HDG_HOLD_ON);
+                sendEvent(KEY_AP_HDG_HOLD_ON);
             }
             manSelHeading();
             hdgSetSel = 0;
@@ -406,7 +471,7 @@ void autopilot::gpioAltitudeInput()
         if (adjust != 0) {
             // Adjust altitude
             double newVal = adjustAltitude(adjust);
-            globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
+            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
             if (setVerticalSpeed != 0) {
                 setAltitude = newVal;
             }
@@ -449,11 +514,11 @@ void autopilot::gpioAltitudeInput()
             // Long press switches between managed and selected
             if (autopilotAlt == AltHold) {
                 autopilotAlt = PitchHold;
-                globals.simVars->write(KEY_AP_ALT_HOLD_OFF);
+                sendEvent(KEY_AP_ALT_HOLD_OFF);
             }
             else {
                 autopilotAlt = AltHold;
-                globals.simVars->write(KEY_AP_ALT_HOLD_ON);
+                sendEvent(KEY_AP_ALT_HOLD_ON);
             }
             manSelAltitude();
             setVerticalSpeed = 0;
@@ -480,7 +545,7 @@ void autopilot::gpioVerticalSpeedInput()
         if (adjust != 0) {
             // Adjust vertical speed:
             double newVal = adjustVerticalSpeed(adjust);
-            globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
             if (setVerticalSpeed != 0) {
                 setVerticalSpeed = newVal;
             }
@@ -500,10 +565,10 @@ void autopilot::gpioVerticalSpeedInput()
         // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
-            manSelAltitude();
-            globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
-            globals.simVars->write(KEY_AP_ALT_HOLD_ON);
-            manSelAltitude();
+            //manSelAltitude();
+            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
+            sendEvent(KEY_AP_ALT_HOLD_ON);
+            //manSelAltitude();
             captureVerticalSpeed();
         }
         prevVsPush = val;
@@ -524,7 +589,7 @@ void autopilot::gpioButtonsInput()
             if (apEnabled) {
                 captureCurrent();
             }
-            globals.simVars->write(KEY_AP_MASTER);
+            sendEvent(KEY_AP_MASTER);
         }
         prevApPush = val;
         time(&lastApAdjust);
@@ -572,7 +637,7 @@ void autopilot::gpioButtonsInput()
             athrEnabled = !athrEnabled;
             globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
 
-            globals.simVars->write(KEY_AUTO_THROTTLE_ARM);
+            sendEvent(KEY_AUTO_THROTTLE_ARM);
         }
         prevAthrPush = val;
         time(&lastAthrAdjust);
@@ -592,9 +657,9 @@ void autopilot::gpioButtonsInput()
             globals.gpioCtrl->writeLed(localiserControl, locEnabled);
 
             if (apprEnabled) {
-                globals.simVars->write(KEY_AP_APR_HOLD_OFF);
+                sendEvent(KEY_AP_APR_HOLD_OFF);
             }
-            globals.simVars->write(KEY_AP_LOC_HOLD);
+            sendEvent(KEY_AP_LOC_HOLD);
         }
         prevLocPush = val;
         time(&lastLocAdjust);
@@ -614,10 +679,10 @@ void autopilot::gpioButtonsInput()
             globals.gpioCtrl->writeLed(approachControl, apprEnabled);
 
             if (apprEnabled) {
-                globals.simVars->write(KEY_AP_APR_HOLD_ON);
+                sendEvent(KEY_AP_APR_HOLD_ON);
             }
             else {
-                globals.simVars->write(KEY_AP_APR_HOLD_OFF);
+                sendEvent(KEY_AP_APR_HOLD_OFF);
             }
         }
         prevApprPush = val;
@@ -638,14 +703,18 @@ void autopilot::machSwap()
     // Set to current speed before switching
     if (showMach) {
         speed = simVars->asiAirspeed;
-        globals.simVars->write(KEY_AP_SPD_VAR_SET, speed);
+        sendEvent(KEY_AP_SPD_VAR_SET, speed);
         showMach = false;
     }
     else {
         mach = simVars->asiMachSpeed;
         // For some weird reason you have to set mach * 100 !
-        globals.simVars->write(KEY_AP_MACH_VAR_SET, mach * 100);
+        sendEvent(KEY_AP_MACH_VAR_SET, mach * 100);
         showMach = true;
+    }
+
+    if (loadedAircraft == FBW_A320NEO) {
+        sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
     }
 }
 
@@ -659,7 +728,7 @@ void autopilot::toggleFlightDirector()
         return;
     }
 
-    globals.simVars->write(KEY_TOGGLE_FLIGHT_DIRECTOR);
+    sendEvent(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
     // Adjust autopilot settings if just after take off
     if (simVars->altAltitude > 3000 || simVars->vsiVerticalSpeed < 1) {
@@ -672,27 +741,27 @@ void autopilot::toggleFlightDirector()
     setVerticalSpeed = 1500;
 
     managedSpeed = false;
-    globals.simVars->write(KEY_SPEED_SLOT_INDEX_SET, 1);
+    sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
     managedAltitude = true;
-    globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+    sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
 
     if (fdEnabled) {
         // Use managed heading if FD turned on
         managedHeading = true;
-        globals.simVars->write(KEY_HEADING_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
     }
     else {
         // Use current heading if FD turned off
         managedHeading = false;
-        globals.simVars->write(KEY_HEADING_SLOT_INDEX_SET, 1);
-        globals.simVars->write(KEY_HEADING_BUG_SET, simVars->hiHeading);
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
 
-    globals.simVars->write(KEY_AP_SPD_VAR_SET, holdSpeed);
-    globals.simVars->write(KEY_AP_ALT_HOLD_ON);
-    globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
-    globals.simVars->write(KEY_AP_AIRSPEED_ON);
-    globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+    sendEvent(KEY_AP_ALT_HOLD_ON);
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    sendEvent(KEY_AP_AIRSPEED_ON);
+    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
 }
 
 /// <summary>
@@ -709,10 +778,10 @@ void autopilot::manSelSpeed()
     }
 
     if (managedSpeed) {
-        globals.simVars->write(KEY_SPEED_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_SPEED_SLOT_INDEX_SET, 2);
     }
     else {
-        globals.simVars->write(KEY_SPEED_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
     }
 }
 
@@ -730,10 +799,10 @@ void autopilot::manSelHeading()
     }
 
     if (managedHeading) {
-        globals.simVars->write(KEY_HEADING_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
     }
     else {
-        globals.simVars->write(KEY_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
     }
 }
 
@@ -751,10 +820,10 @@ void autopilot::manSelAltitude()
     }
 
     if (managedAltitude) {
-        globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
     }
     else {
-        globals.simVars->write(KEY_ALTITUDE_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 1);
     }
 }
 
@@ -773,10 +842,10 @@ void autopilot::captureCurrent()
         }
     }
 
-    globals.simVars->write(KEY_AP_SPD_VAR_SET, holdSpeed);
+    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
 
     if (!managedHeading) {
-        globals.simVars->write(KEY_HEADING_BUG_SET, simVars->hiHeading);
+        sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
 
     if (!managedAltitude) {
@@ -789,18 +858,35 @@ void autopilot::captureCurrent()
         else {
             holdAlt += 100 - hundreds;
         }
-        globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, holdAlt);
+        sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, holdAlt);
     }
 }
 
 void autopilot::captureVerticalSpeed()
 {
-    setVerticalSpeed = simVars->autopilotVerticalSpeed;
+    printf("Capture vertical speed actual: %f  set: %f\n", simVars->autopilotVerticalSpeed, setVerticalSpeed);
+    fflush(stdout);
+
     setAltitude = simVars->autopilotAltitude;
+
+    if (setAltitude < simVars->altAltitude && simVars->autopilotVerticalSpeed >= 0) {
+        setVerticalSpeed = -700;
+        sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    }
+    else if (setAltitude > simVars->altAltitude && simVars->autopilotVerticalSpeed <= 0) {
+        setVerticalSpeed = 700;
+        sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    }
+    else {
+        setVerticalSpeed = simVars->autopilotVerticalSpeed;
+    }
 }
 
 void autopilot::restoreVerticalSpeed()
 {
+    printf("Restore vertical speed actual: %f  set: %f\n", simVars->autopilotVerticalSpeed, setVerticalSpeed);
+    fflush(stdout);
+
     // Ignore if autopilot disabled or altitude already reached
     if (!apEnabled ||
         (setVerticalSpeed < 0 && simVars->altAltitude < simVars->autopilotAltitude) ||
@@ -809,9 +895,9 @@ void autopilot::restoreVerticalSpeed()
         return;
     }
 
-    globals.simVars->write(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
-    globals.simVars->write(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-    globals.simVars->write(KEY_AP_ALT_HOLD_ON);
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    sendEvent(KEY_AP_ALT_HOLD_ON);
 }
 
 int autopilot::adjustSpeed(int adjust)

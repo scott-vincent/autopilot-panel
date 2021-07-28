@@ -103,6 +103,7 @@ public:
     void update();
 
 private:
+    void sendEvent(EVENT_ID id, double value);
     void addGpio();
     void gpioSpeedInput();
     void gpioHeadingInput();
