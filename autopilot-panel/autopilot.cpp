@@ -118,16 +118,17 @@ void autopilot::update()
         locEnabled = simVars->autopilotApproachHold;
         apprEnabled = simVars->autopilotGlideslopeHold;
         setVerticalSpeed = 0;
-        managedSpeed = false;
-        managedHeading = false;
-        managedAltitude = false;
-        if (airliner) {
-            if (simVars->asiAirspeed < 100) {
-                managedSpeed = true;
-            }
-            managedHeading = true;
-            managedAltitude = true;
+        if (loadedAircraft != FBW_A320NEO) {
+            managedSpeed = false;
+            managedHeading = false;
+            managedAltitude = false;
         }
+    }
+
+    if (loadedAircraft == FBW_A320NEO) {
+        managedSpeed = simVars->jbManagedSpeed;
+        managedHeading = simVars->jbManagedHeading;
+        managedAltitude = simVars->jbManagedAltitude;
     }
 
     time(&now);
@@ -186,26 +187,15 @@ void autopilot::update()
         autopilotHdg = NoHdg;
     }
 
-    if (simVars->autopilotAltLock == 1) {
-        if (autopilotAlt == VerticalSpeedHold) {
-            // Revert to alt hold when within range of target altitude
-            int diff = abs(simVars->altAltitude - simVars->autopilotAltitude);
-            if (diff < 210) {
-                autopilotAlt = AltHold;
-            }
-        }
-        else {
-            autopilotAlt = AltHold;
-        }
-    }
-    else if (simVars->autopilotVerticalHold == 1) {
+    if (simVars->autopilotVerticalHold == 1) {
         autopilotAlt = VerticalSpeedHold;
+    }
+    else if (autopilotAlt == VerticalSpeedHold) {
+        // Reached required altitude so revert to altitude hold
+        autopilotAlt = AltHold;
     }
     else if (simVars->autopilotPitchHold == 1) {
         autopilotAlt = PitchHold;
-    }
-    else {
-        autopilotAlt = NoAlt;
     }
 
     // Alt hold can disengage when passing a waypoint so
@@ -713,9 +703,9 @@ void autopilot::machSwap()
         showMach = true;
     }
 
-    if (loadedAircraft == FBW_A320NEO) {
-        sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
-    }
+    //if (loadedAircraft == FBW_A320NEO) {
+    //    sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
+    //}
 }
 
 /// <summary>
@@ -730,38 +720,38 @@ void autopilot::toggleFlightDirector()
 
     sendEvent(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
-    // Adjust autopilot settings if just after take off
-    if (simVars->altAltitude > 3000 || simVars->vsiVerticalSpeed < 1) {
-        return;
-    }
+    //// Adjust autopilot settings if just after take off
+    //if (simVars->altAltitude > 3000 || simVars->vsiVerticalSpeed < 1) {
+    //    return;
+    //}
 
-    // Initial settings
-    int holdSpeed = 200;
-    setAltitude = 4000;
-    setVerticalSpeed = 1500;
+    //// Initial settings
+    //int holdSpeed = 210;
+    //setAltitude = 4000;
+    //setVerticalSpeed = 1500;
 
-    managedSpeed = false;
-    sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
-    managedAltitude = true;
-    sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+    //managedSpeed = false;
+    //sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
+    //managedAltitude = true;
+    //sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
 
-    if (fdEnabled) {
-        // Use managed heading if FD turned on
-        managedHeading = true;
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
-    }
-    else {
-        // Use current heading if FD turned off
-        managedHeading = false;
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
-        sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
-    }
+    //if (fdEnabled) {
+    //    // Use managed heading if FD turned on
+    //    managedHeading = true;
+    //    sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
+    //}
+    //else {
+    //    // Use current heading if FD turned off
+    //    managedHeading = false;
+    //    sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
+    //    sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
+    //}
 
-    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
-    sendEvent(KEY_AP_ALT_HOLD_ON);
-    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
-    sendEvent(KEY_AP_AIRSPEED_ON);
-    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    //sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+    //sendEvent(KEY_AP_ALT_HOLD_ON);
+    //sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    //sendEvent(KEY_AP_AIRSPEED_ON);
+    //sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
 }
 
 /// <summary>
@@ -864,9 +854,6 @@ void autopilot::captureCurrent()
 
 void autopilot::captureVerticalSpeed()
 {
-    printf("Capture vertical speed actual: %f  set: %f\n", simVars->autopilotVerticalSpeed, setVerticalSpeed);
-    fflush(stdout);
-
     setAltitude = simVars->autopilotAltitude;
 
     if (setAltitude < simVars->altAltitude && simVars->autopilotVerticalSpeed >= 0) {
@@ -884,9 +871,6 @@ void autopilot::captureVerticalSpeed()
 
 void autopilot::restoreVerticalSpeed()
 {
-    printf("Restore vertical speed actual: %f  set: %f\n", simVars->autopilotVerticalSpeed, setVerticalSpeed);
-    fflush(stdout);
-
     // Ignore if autopilot disabled or altitude already reached
     if (!apEnabled ||
         (setVerticalSpeed < 0 && simVars->altAltitude < simVars->autopilotAltitude) ||
@@ -975,14 +959,26 @@ int autopilot::adjustAltitude(int adjust)
         }
     }
 
-    if (autopilotAlt == VerticalSpeedHold) {
-        // Cancel vertical speed hold when target altitude reached
-        int diff = abs(altitude - simVars->altAltitude);
-        if (diff < 210 || (altitude < simVars->altAltitude && prevVal > simVars->altAltitude)
-            || (altitude > simVars->altAltitude && prevVal < simVars->altAltitude)) {
-            autopilotAlt = AltHold;
+    int diff = abs(altitude - simVars->altAltitude);
+    if (diff > 400) {
+        if (altitude < simVars->altAltitude && setVerticalSpeed >= 0) {
+            setVerticalSpeed = -700;
+            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+        }
+        else if (altitude > simVars->altAltitude && setVerticalSpeed <= 0) {
+            setVerticalSpeed = 700;
+            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
         }
     }
+
+    //if (autopilotAlt == VerticalSpeedHold) {
+    //    // Cancel vertical speed hold when target altitude reached
+    //    int diff = abs(altitude - simVars->altAltitude);
+    //    if (diff < 210 || (altitude < simVars->altAltitude && prevVal > simVars->altAltitude)
+    //        || (altitude > simVars->altAltitude && prevVal < simVars->altAltitude)) {
+    //        autopilotAlt = AltHold;
+    //    }
+    //}
 
     return altitude;
 }
