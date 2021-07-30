@@ -720,38 +720,38 @@ void autopilot::toggleFlightDirector()
 
     sendEvent(KEY_TOGGLE_FLIGHT_DIRECTOR);
 
-    //// Adjust autopilot settings if just after take off
-    //if (simVars->altAltitude > 3000 || simVars->vsiVerticalSpeed < 1) {
-    //    return;
-    //}
+    // Adjust autopilot settings if just after take off
+    if (simVars->altAltitude > 4000 || simVars->vsiVerticalSpeed < 1) {
+        return;
+    }
 
-    //// Initial settings
-    //int holdSpeed = 210;
-    //setAltitude = 4000;
-    //setVerticalSpeed = 1500;
+    // Initial settings
+    int holdSpeed = 210;
+    setAltitude = 4000;
+    setVerticalSpeed = 1500;
 
-    //managedSpeed = false;
-    //sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
-    //managedAltitude = true;
-    //sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+    managedSpeed = false;
+    sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
+    managedAltitude = true;
+    sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
 
-    //if (fdEnabled) {
-    //    // Use managed heading if FD turned on
-    //    managedHeading = true;
-    //    sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
-    //}
-    //else {
-    //    // Use current heading if FD turned off
-    //    managedHeading = false;
-    //    sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
-    //    sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
-    //}
+    if (fdEnabled) {
+        // Use managed heading if FD turned on
+        managedHeading = true;
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
+    }
+    else {
+        // Use current heading if FD turned off
+        managedHeading = false;
+        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
+    }
 
-    //sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
-    //sendEvent(KEY_AP_ALT_HOLD_ON);
-    //sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
-    //sendEvent(KEY_AP_AIRSPEED_ON);
-    //sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+    sendEvent(KEY_AP_ALT_HOLD_ON);
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    sendEvent(KEY_AP_AIRSPEED_ON);
+    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
 }
 
 /// <summary>
