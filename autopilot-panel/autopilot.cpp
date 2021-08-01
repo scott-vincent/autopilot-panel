@@ -125,12 +125,6 @@ void autopilot::update()
         }
     }
 
-    if (loadedAircraft == FBW_A320NEO) {
-        managedSpeed = simVars->jbManagedSpeed;
-        managedHeading = simVars->jbManagedHeading;
-        managedAltitude = simVars->jbManagedAltitude;
-    }
-
     time(&now);
     gpioSpeedInput();
     gpioHeadingInput();
@@ -144,12 +138,21 @@ void autopilot::update()
     if (lastSpdAdjust == 0) {
         mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
+        if (loadedAircraft == FBW_A320NEO) {
+            managedSpeed = simVars->jbManagedSpeed;
+        }
     }
     if (lastHdgAdjust == 0) {
         heading = simVars->autopilotHeading;
+        if (loadedAircraft == FBW_A320NEO) {
+            managedHeading = simVars->jbManagedHeading;
+        }
     }
     if (lastAltAdjust == 0) {
         altitude = simVars->autopilotAltitude;
+        if (loadedAircraft == FBW_A320NEO) {
+            managedAltitude = simVars->jbManagedAltitude;
+        }
     }
     if (lastVsAdjust == 0) {
         verticalSpeed = simVars->autopilotVerticalSpeed;
@@ -203,6 +206,11 @@ void autopilot::update()
     //if (managedAltitude && !apprEnabled && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
     //    restoreVerticalSpeed();
     //}
+
+    // If pressing brake pedal cancel the autobrake
+    if (simVars->jbAutobrake > 0 && simVars->jbBrakePedal > 5) {
+        sendEvent(KEY_AUTOBRAKE, 0);
+    }
 }
 
 void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
@@ -229,6 +237,7 @@ void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
             else {
                 globals.simVars->write(A32NX_FCU_VS_PULL);
             }
+            id = A32NX_FCU_VS_SET;
             break;
         case KEY_AP_APR_HOLD_OFF:
             // Don't toggle if already in required state
@@ -239,6 +248,14 @@ void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
             // Don't toggle if already in required state
             if (simVars->jbApprMode == 1) return;
             id = A32NX_FCU_APPR_PUSH;
+            break;
+        case KEY_HEADING_BUG_SET:
+            globals.simVars->write(id, value);
+            id = A32NX_FCU_HDG_SET;
+            break;
+        case KEY_AP_MACH_VAR_SET:
+        case KEY_AP_SPD_VAR_SET:
+            id = A32NX_FCU_SPD_SET;
             break;
         case KEY_SPEED_SLOT_INDEX_SET:
             if (value == 2) {
@@ -361,6 +378,7 @@ void autopilot::gpioSpeedInput()
             manSelSpeed();
             spdSetSel = 0;
             lastSpdPush = 0;
+            time(&lastSpdAdjust);
         }
     }
 }
@@ -440,6 +458,7 @@ void autopilot::gpioHeadingInput()
             manSelHeading();
             hdgSetSel = 0;
             lastHdgPush = 0;
+            time(&lastHdgAdjust);
         }
     }
 }
@@ -514,6 +533,7 @@ void autopilot::gpioAltitudeInput()
             setVerticalSpeed = 0;
             altSetSel = 0;
             lastAltPush = 0;
+            time(&lastAltAdjust);
         }
     }
 }
@@ -692,20 +712,20 @@ void autopilot::machSwap()
 {
     // Set to current speed before switching
     if (showMach) {
-        speed = simVars->asiAirspeed;
-        sendEvent(KEY_AP_SPD_VAR_SET, speed);
+        //speed = simVars->asiAirspeed;
+        //sendEvent(KEY_AP_SPD_VAR_SET, speed);
         showMach = false;
     }
     else {
-        mach = simVars->asiMachSpeed;
-        // For some weird reason you have to set mach * 100 !
-        sendEvent(KEY_AP_MACH_VAR_SET, mach * 100);
+        //mach = simVars->asiMachSpeed;
+        // Have to set mach * 100 !
+        //sendEvent(KEY_AP_MACH_VAR_SET, mach * 100);
         showMach = true;
     }
 
-    //if (loadedAircraft == FBW_A320NEO) {
-    //    sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
-    //}
+    if (loadedAircraft == FBW_A320NEO) {
+        sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
+    }
 }
 
 /// <summary>
