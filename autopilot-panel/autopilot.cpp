@@ -439,23 +439,26 @@ void autopilot::gpioHeadingInput()
         if (now - lastHdgPush > 1) {
             // Long press switches between managed and selected when flight
             // director is active or toggles heading hold when it isn't.
+            double setHeading = simVars->hiHeading;
             if (fdEnabled) {
-                if (managedHeading) {
-                    // Keep heading bug setting when managed mode turned off
-                    sendEvent(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                manSelHeading();
+                if (!managedHeading) {
+                    // Keep same heading when managed mode turned off
+                    sendEvent(KEY_HEADING_BUG_SET, setHeading);
                 }
             }
             else if (autopilotHdg == HdgSet) {
                 autopilotHdg = LevelFlight;
                 sendEvent(KEY_AP_HDG_HOLD_OFF);
-                // Keep heading bug setting when heading hold turned off
-                sendEvent(KEY_HEADING_BUG_SET, simVars->autopilotHeading);
+                manSelHeading();
+                // Keep same heading when heading hold turned off
+                sendEvent(KEY_HEADING_BUG_SET, setHeading);
             }
             else {
                 autopilotHdg = HdgSet;
                 sendEvent(KEY_AP_HDG_HOLD_ON);
+                manSelHeading();
             }
-            manSelHeading();
             hdgSetSel = 0;
             lastHdgPush = 0;
             time(&lastHdgAdjust);
