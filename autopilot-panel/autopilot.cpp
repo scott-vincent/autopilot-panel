@@ -140,6 +140,7 @@ void autopilot::update()
         speed = simVars->autopilotAirspeed;
         if (loadedAircraft == FBW_A320NEO) {
             managedSpeed = simVars->jbManagedSpeed;
+            showMach = simVars->jbAutothrustMode == 8;
         }
     }
     if (lastHdgAdjust == 0) {
