@@ -441,7 +441,7 @@ void autopilot::gpioHeadingInput()
             // Long press switches between managed and selected when flight
             // director is active or toggles heading hold when it isn't.
             double setHeading = simVars->hiHeading;
-            if (fdEnabled) {
+            if (airliner && fdEnabled) {
                 manSelHeading();
                 if (!managedHeading) {
                     // Keep same heading when managed mode turned off
