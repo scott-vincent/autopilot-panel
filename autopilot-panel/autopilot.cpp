@@ -193,7 +193,7 @@ void autopilot::update()
         autopilotHdg = NoHdg;
     }
 
-    if (simVars->autopilotVerticalHold == 1) {
+    if (simVars->autopilotVerticalHold == 1 || (!airliner && simVars->autopilotVerticalSpeed != 0)) {
         autopilotAlt = VerticalSpeedHold;
     }
     else if (autopilotAlt == VerticalSpeedHold) {
