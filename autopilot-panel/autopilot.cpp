@@ -37,9 +37,11 @@ void autopilot::render()
     }
 
     // Write to 7-segment displays
-    if (managedSpeed) {
+    if (managedSpeed || !airliner) {
         sevenSegment->blankSegData(display1, 3, true);
-        sevenSegment->decimalSegData(display1, 2);
+        if (airliner) {
+            sevenSegment->decimalSegData(display1, 2);
+        }
     }
     else if (showMach) {
         int machX100 = (mach + 0.005) * 100;
@@ -60,7 +62,7 @@ void autopilot::render()
     sevenSegment->blankSegData(&display1[3], 2, false);
 
     // Heading
-    if (managedHeading) {
+    if (managedHeading || (!airliner && autopilotHdg != HdgSet)) {
         sevenSegment->blankSegData(&display1[5], 3, true);
         sevenSegment->decimalSegData(&display1[5], 2);
     }
