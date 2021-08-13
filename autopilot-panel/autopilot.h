@@ -47,6 +47,7 @@ private:
     bool athrEnabled;
     bool locEnabled;
     bool apprEnabled;
+    double lastSetHeading = -1;
     double setVerticalSpeed = 0;
     double setAltitude;
     bool managedSpeed = false;

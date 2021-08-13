@@ -119,6 +119,7 @@ void autopilot::update()
         athrEnabled = simVars->autothrottleActive;
         locEnabled = simVars->autopilotApproachHold;
         apprEnabled = simVars->autopilotGlideslopeHold;
+        lastSetHeading = -1;
         setVerticalSpeed = 0;
         if (loadedAircraft != FBW_A320NEO) {
             managedSpeed = false;
@@ -149,6 +150,18 @@ void autopilot::update()
         heading = simVars->autopilotHeading;
         if (loadedAircraft == FBW_A320NEO) {
             managedHeading = simVars->jbManagedHeading;
+        }
+
+        // Hack - Fix broken heading (changes to -1 on its own!)
+        if (!managedHeading && simVars->autopilotHeading == -1) {
+            if (lastSetHeading != -1) {
+                sendEvent(KEY_HEADING_BUG_SET, lastSetHeading);
+                printf("Hack: Change heading back to %f\n", lastSetHeading);
+                fflush(stdout);
+            }
+        }
+        else {
+            lastSetHeading = simVars->autopilotHeading;
         }
     }
     if (lastAltAdjust == 0) {
