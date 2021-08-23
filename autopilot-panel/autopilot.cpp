@@ -597,13 +597,12 @@ void autopilot::gpioVerticalSpeedInput()
             if (loadedAircraft == BOEING_747) {
                 // B747 Bug - Try to force aircraft into VS mode
                 manSelAltitude();
-                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, 1500);
-                sendEvent(KEY_AP_ALT_HOLD_ON);
-                manSelAltitude();
             }
-            else {
-                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
-                sendEvent(KEY_AP_ALT_HOLD_ON);
+            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
+            sendEvent(KEY_AP_ALT_HOLD_ON);
+            if (loadedAircraft == BOEING_747) {
+                // B747 Bug - Try to force aircraft into VS mode
+                manSelAltitude();
             }
             captureVerticalSpeed();
         }
@@ -912,6 +911,10 @@ void autopilot::captureVerticalSpeed()
     }
     else {
         setVerticalSpeed = simVars->autopilotVerticalSpeed;
+        if (loadedAircraft == BOEING_747) {
+            // B747 Bug - Try to force VS mode
+            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+        }
     }
 }
 
