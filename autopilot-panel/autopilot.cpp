@@ -594,10 +594,17 @@ void autopilot::gpioVerticalSpeedInput()
         // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
-            //manSelAltitude();
-            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
-            sendEvent(KEY_AP_ALT_HOLD_ON);
-            //manSelAltitude();
+            if (loadedAircraft == BOEING_747) {
+                // B747 Bug - Try to force aircraft into VS mode
+                manSelAltitude();
+                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, 1500);
+                sendEvent(KEY_AP_ALT_HOLD_ON);
+                manSelAltitude();
+            }
+            else {
+                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
+                sendEvent(KEY_AP_ALT_HOLD_ON);
+            }
             captureVerticalSpeed();
         }
         prevVsPush = val;

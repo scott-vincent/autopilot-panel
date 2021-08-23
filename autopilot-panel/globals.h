@@ -18,6 +18,7 @@ enum Aircraft {
     SHOCK_ULTRA,
     ASOBO_A320NEO,
     FBW_A320NEO,
+    BOEING_747,
     SUPERMARINE_SPITFIRE,
     OTHER_AIRCRAFT,
     OTHER_AIRCRAFT2,
@@ -39,6 +40,8 @@ struct globalVars
     const int Asobo_A320neo_Len = 15;
     const char* FBW_A320neo_Text = "FBW Airbus A320 Neo";
     const int FBW_A320neo_Len = 19;
+    const char* Boeing_747_Text = "Boeing 747";
+    const int Boeing_747_Len = 10;
     const char* Supermarine_Spitfire_Text = "FlyingIron Spitfire";
     const int Supermarine_Spitfire_Len = 19;
     const int FastAircraftSpeed = 195;
