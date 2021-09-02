@@ -121,7 +121,7 @@ void autopilot::update()
         apprEnabled = simVars->autopilotGlideslopeHold;
         lastSetHeading = -1;
         setVerticalSpeed = 0;
-        if (loadedAircraft != FBW_A320NEO) {
+        if (loadedAircraft != FBW_A320NEO && loadedAircraft != BOEING_747) {
             managedSpeed = false;
             managedHeading = false;
             managedAltitude = false;
@@ -594,16 +594,16 @@ void autopilot::gpioVerticalSpeedInput()
         // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
-            if (loadedAircraft == BOEING_747) {
-                // B747 Bug - Try to force aircraft into VS mode
-                manSelAltitude();
-            }
+            //if (loadedAircraft == BOEING_747) {
+            //    // B747 Bug - Try to force aircraft into VS mode
+            //    manSelAltitude();
+            //}
             sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
             sendEvent(KEY_AP_ALT_HOLD_ON);
-            if (loadedAircraft == BOEING_747) {
-                // B747 Bug - Try to force aircraft into VS mode
-                manSelAltitude();
-            }
+            //if (loadedAircraft == BOEING_747) {
+            //    // B747 Bug - Try to force aircraft into VS mode
+            //    manSelAltitude();
+            //}
             captureVerticalSpeed();
         }
         prevVsPush = val;
@@ -911,10 +911,10 @@ void autopilot::captureVerticalSpeed()
     }
     else {
         setVerticalSpeed = simVars->autopilotVerticalSpeed;
-        if (loadedAircraft == BOEING_747) {
-            // B747 Bug - Try to force VS mode
-            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-        }
+        //if (loadedAircraft == BOEING_747) {
+        //    // B747 Bug - Try to force VS mode
+        //    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+        //}
     }
 }
 
