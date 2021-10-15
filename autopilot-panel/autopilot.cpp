@@ -224,7 +224,7 @@ void autopilot::update()
     //}
 
     // If pressing brake pedal cancel the autobrake
-    if (simVars->jbAutobrake > 0 && simVars->jbBrakePedal > 5) {
+    if (simVars->jbAutobrake > 0 && simVars->brakePedal > 5) {
         sendEvent(KEY_AUTOBRAKE, 0);
     }
 }
