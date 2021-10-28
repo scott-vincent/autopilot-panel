@@ -335,7 +335,7 @@ void autopilot::gpioSpeedInput()
             // Adjust speed
             if (showMach) {
                 double newVal = adjustMach(adjust);
-                sendEvent(KEY_AP_MACH_VAR_SET, newVal * 100);
+                sendEvent(KEY_AP_MACH_VAR_SET, newVal * 100 + 0.5);
             }
             else {
                 double newVal = adjustSpeed(adjust);
