@@ -1,8 +1,6 @@
 echo Building autopilot-panel
 cd autopilot-panel
-g++ -lwiringPi -lpthread  \
-    -o autopilot-panel \
-    -I . \
+g++ -o autopilot-panel -I . \
     settings.cpp \
     simvarDefs.cpp \
     simvars.cpp \
@@ -11,5 +9,5 @@ g++ -lwiringPi -lpthread  \
     sevensegment.cpp \
     autopilot.cpp \
     autopilot-panel.cpp \
-    || exit
+    -lwiringPi -lpthread || exit
 echo Done

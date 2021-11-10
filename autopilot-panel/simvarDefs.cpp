@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "simvarDefs.h"
 
-const char* versionString = "v1.5.4";
+const char* versionString = "v1.6.1";
 
 const char* SimVarDefs[][2] = {
     // Vars for Jetbridge (must come first)
@@ -74,6 +74,7 @@ const char* SimVarDefs[][2] = {
     { "Autopilot Heading Lock", "bool" },
     { "Autopilot Wing Leveler", "bool" },
     { "Autopilot Altitude Lock Var", "feet" },
+    { "Autopilot Altitude Lock Var:3", "feet" },
     { "Autopilot Altitude Lock", "bool" },
     { "Autopilot Pitch Hold", "bool" },
     { "Autopilot Vertical Hold Var", "feet/minute" },
