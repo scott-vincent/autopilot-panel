@@ -273,7 +273,7 @@ void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
         case KEY_AP_SPD_VAR_SET:
             id = A32NX_FCU_SPD_SET;
             break;
-        case KEY_SPEED_SLOT_INDEX_SET:
+        case KEY_AP_SPEED_SLOT_INDEX_SET:
             if (value == 2) {
                 id = A32NX_FCU_SPD_PUSH;
             }
@@ -281,7 +281,7 @@ void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
                 id = A32NX_FCU_SPD_PULL;
             }
             break;
-        case KEY_HEADING_SLOT_INDEX_SET:
+        case KEY_AP_HEADING_SLOT_INDEX_SET:
             if (value == 2) {
                 id = A32NX_FCU_HDG_PUSH;
             }
@@ -289,7 +289,7 @@ void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
                 id = A32NX_FCU_HDG_PULL;
             }
             break;
-        case KEY_ALTITUDE_SLOT_INDEX_SET:
+        case KEY_AP_VS_SLOT_INDEX_SET:
             if (value == 2) {
                 id = A32NX_FCU_ALT_PUSH;
             }
@@ -594,16 +594,12 @@ void autopilot::gpioVerticalSpeedInput()
         // Short press switches between managed and selected
         if (prevVsPush % 2 == 1) {
             autopilotAlt = VerticalSpeedHold;
-            //if (loadedAircraft == BOEING_747) {
-            //    // B747 Bug - Try to force aircraft into VS mode
-            //    manSelAltitude();
-            //}
             sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
             sendEvent(KEY_AP_ALT_HOLD_ON);
-            //if (loadedAircraft == BOEING_747) {
-            //    // B747 Bug - Try to force aircraft into VS mode
-            //    manSelAltitude();
-            //}
+            if (loadedAircraft == BOEING_747) {
+                // B747 Bug - Try to force aircraft into VS mode
+                manSelAltitude();
+            }
             captureVerticalSpeed();
         }
         prevVsPush = val;
@@ -776,19 +772,19 @@ void autopilot::toggleFlightDirector()
     setVerticalSpeed = 1500;
 
     managedSpeed = false;
-    sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
+    sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
     managedAltitude = true;
-    sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+    sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
 
     if (fdEnabled) {
         // Use managed heading if FD turned on
         managedHeading = true;
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 2);
     }
     else {
         // Use current heading if FD turned off
         managedHeading = false;
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 1);
         sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
 
@@ -813,10 +809,10 @@ void autopilot::manSelSpeed()
     }
 
     if (managedSpeed) {
-        sendEvent(KEY_SPEED_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 2);
     }
     else {
-        sendEvent(KEY_SPEED_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
     }
 }
 
@@ -834,10 +830,10 @@ void autopilot::manSelHeading()
     }
 
     if (managedHeading) {
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 2);
     }
     else {
-        sendEvent(KEY_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 1);
     }
 }
 
@@ -855,10 +851,10 @@ void autopilot::manSelAltitude()
     }
 
     if (managedAltitude) {
-        sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
     }
     else {
-        sendEvent(KEY_ALTITUDE_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 1);
     }
 }
 
