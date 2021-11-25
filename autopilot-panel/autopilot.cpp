@@ -771,11 +771,6 @@ void autopilot::toggleFlightDirector()
     setAltitude = 4000;
     setVerticalSpeed = 1500;
 
-    managedSpeed = false;
-    sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
-    managedAltitude = true;
-    sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
-
     if (fdEnabled) {
         // Use managed heading if FD turned on
         managedHeading = true;
@@ -788,10 +783,16 @@ void autopilot::toggleFlightDirector()
         sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
 
-    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
     sendEvent(KEY_AP_ALT_HOLD_ON);
     sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
     sendEvent(KEY_AP_AIRSPEED_ON);
+
+    managedSpeed = false;
+    sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
+    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+
+    managedAltitude = true;
+    sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
     sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
 }
 
