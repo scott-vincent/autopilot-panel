@@ -118,6 +118,7 @@ private:
     void manSelSpeed();
     void manSelHeading();
     void manSelAltitude();
+    void selectedVs();
     void captureCurrent();
     void captureVerticalSpeed();
     void restoreVerticalSpeed();

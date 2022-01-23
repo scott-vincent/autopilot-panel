@@ -607,12 +607,16 @@ void autopilot::gpioVerticalSpeedInput()
     // Vertical speed push
     val = globals.gpioCtrl->readPush(verticalSpeedControl);
     if (val != INT_MIN) {
-        // Short press switches between HDG,V/S and TRK,FPA mode
+        // If in selected mode, short press switches between HDG,V/S and TRK,FPA mode.
+        // If in managed mode, short press switches to selected mode.
         if (prevVsPush % 2 == 1) {
-            if (loadedAircraft == FBW_A320NEO) {
+            if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW_A320NEO) {
+                selectedVs();
+            }
+            else {
+                // Switch between HDG,V/S and TRK,FPA mode
                 sendEvent(A32NX_FCU_TRK_FPA_TOGGLE_PUSH);
             }
-            time(&lastVsAdjust);
             time(&lastVsPush);
         }
         if (val % 2 == 1) {
@@ -625,17 +629,9 @@ void autopilot::gpioVerticalSpeedInput()
     // V/S long push (over 1 sec)
     if (lastVsPush > 0) {
         if (now - lastVsPush > 1) {
-            // Long press switches between managed and selected
-            autopilotAlt = VerticalSpeedHold;
-            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
-            sendEvent(KEY_AP_ALT_HOLD_ON);
-            if (loadedAircraft == BOEING_747) {
-                // B747 Bug - Try to force aircraft into VS mode
-                manSelAltitude();
-            }
-            captureVerticalSpeed();
+            // Long press switches to selected mode
+            selectedVs();
             lastVsPush = 0;
-            time(&lastVsAdjust);
         }
     }
 }
@@ -885,6 +881,18 @@ void autopilot::manSelAltitude()
     else {
         sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 1);
     }
+}
+
+void autopilot::selectedVs()
+{
+    autopilotAlt = VerticalSpeedHold;
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
+    sendEvent(KEY_AP_ALT_HOLD_ON);
+    if (loadedAircraft == BOEING_747) {
+        // B747 Bug - Try to force aircraft into VS mode
+        manSelAltitude();
+    }
+    captureVerticalSpeed();
 }
 
 void autopilot::captureCurrent()
