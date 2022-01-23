@@ -86,6 +86,10 @@ void autopilot::render()
     if (autopilotAlt == VerticalSpeedHold) {
         sevenSegment->getSegData(display3, 8, verticalSpeed, 4);
     }
+    else if (simVars->autopilotVerticalHold == -1) {
+        // FPA mode so verticalSpeed is the flight path angle rather than V/S
+        sevenSegment->getSegDegrees(display3, 8, fpaX10);
+    }
     else {
         sevenSegment->blankSegData(display3, 3, false);
         sevenSegment->blankSegData(&display3[3], 5, true);
@@ -113,7 +117,12 @@ void autopilot::update()
         speed = simVars->autopilotAirspeed;
         heading = simVars->autopilotHeading;
         altitude = simVars->autopilotAltitude;
-        verticalSpeed = simVars->autopilotVerticalSpeed;
+        if (simVars->autopilotVerticalHold == -1) {
+            fpaX10 = simVars->autopilotVerticalSpeed * 10;
+        }
+        else {
+            verticalSpeed = simVars->autopilotVerticalSpeed;
+        }
         apEnabled = simVars->autopilotEngaged;
         fdEnabled = simVars->flightDirectorActive;
         athrEnabled = simVars->autothrottleActive;
@@ -171,7 +180,12 @@ void autopilot::update()
         }
     }
     if (lastVsAdjust == 0) {
-        verticalSpeed = simVars->autopilotVerticalSpeed;
+        if (simVars->autopilotVerticalHold == -1) {
+            fpaX10 = simVars->autopilotVerticalSpeed * 10;
+        }
+        else {
+            verticalSpeed = simVars->autopilotVerticalSpeed;
+        }
     }
     if (lastApAdjust == 0) {
         apEnabled = simVars->autopilotEngaged;
@@ -216,12 +230,6 @@ void autopilot::update()
     else if (simVars->autopilotPitchHold == 1) {
         autopilotAlt = PitchHold;
     }
-
-    // Alt hold can disengage when passing a waypoint so
-    // re-enable and set previous altitude / vertical speed.
-    //if (managedAltitude && !apprEnabled && setVerticalSpeed != 0 && autopilotAlt != AltHold) {
-    //    restoreVerticalSpeed();
-    //}
 
     // If pressing brake pedal cancel the autobrake
     if (simVars->jbAutobrake > 0 && simVars->brakePedal > 5) {
@@ -572,11 +580,19 @@ void autopilot::gpioVerticalSpeedInput()
         }
 
         if (adjust != 0) {
-            // Adjust vertical speed:
-            double newVal = adjustVerticalSpeed(adjust);
-            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
-            if (setVerticalSpeed != 0) {
-                setVerticalSpeed = newVal;
+            if (simVars->autopilotVerticalHold == -1) {
+                // Adust FPA
+                double newVal = adjustFpa(adjust);
+                // Expects FPA x 10
+                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+            }
+            else {
+                // Adjust vertical speed
+                double newVal = adjustVerticalSpeed(adjust);
+                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+                if (setVerticalSpeed != 0) {
+                    setVerticalSpeed = newVal;
+                }
             }
             prevVsVal = val;
         }
@@ -591,8 +607,25 @@ void autopilot::gpioVerticalSpeedInput()
     // Vertical speed push
     val = globals.gpioCtrl->readPush(verticalSpeedControl);
     if (val != INT_MIN) {
-        // Short press switches between managed and selected
+        // Short press switches between HDG,V/S and TRK,FPA mode
         if (prevVsPush % 2 == 1) {
+            if (loadedAircraft == FBW_A320NEO) {
+                sendEvent(A32NX_FCU_TRK_FPA_TOGGLE_PUSH);
+            }
+            time(&lastVsAdjust);
+            time(&lastVsPush);
+        }
+        if (val % 2 == 1) {
+            // Released
+            lastVsPush = 0;
+        }
+        prevVsPush = val;
+    }
+
+    // V/S long push (over 1 sec)
+    if (lastVsPush > 0) {
+        if (now - lastVsPush > 1) {
+            // Long press switches between managed and selected
             autopilotAlt = VerticalSpeedHold;
             sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
             sendEvent(KEY_AP_ALT_HOLD_ON);
@@ -601,8 +634,9 @@ void autopilot::gpioVerticalSpeedInput()
                 manSelAltitude();
             }
             captureVerticalSpeed();
+            lastVsPush = 0;
+            time(&lastVsAdjust);
         }
-        prevVsPush = val;
     }
 }
 
@@ -731,16 +765,10 @@ void autopilot::gpioButtonsInput()
 /// </summary>
 void autopilot::machSwap()
 {
-    // Set to current speed before switching
     if (showMach) {
-        //speed = simVars->asiAirspeed;
-        //sendEvent(KEY_AP_SPD_VAR_SET, speed);
         showMach = false;
     }
     else {
-        //mach = simVars->asiMachSpeed;
-        // Have to set mach * 100 !
-        //sendEvent(KEY_AP_MACH_VAR_SET, mach * 100);
         showMach = true;
     }
 
@@ -908,10 +936,6 @@ void autopilot::captureVerticalSpeed()
     }
     else {
         setVerticalSpeed = simVars->autopilotVerticalSpeed;
-        //if (loadedAircraft == BOEING_747) {
-        //    // B747 Bug - Try to force VS mode
-        //    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-        //}
     }
 }
 
@@ -1017,15 +1041,6 @@ int autopilot::adjustAltitude(int adjust)
         }
     }
 
-    //if (autopilotAlt == VerticalSpeedHold) {
-    //    // Cancel vertical speed hold when target altitude reached
-    //    int diff = abs(altitude - simVars->altAltitude);
-    //    if (diff < 210 || (altitude < simVars->altAltitude && prevVal > simVars->altAltitude)
-    //        || (altitude > simVars->altAltitude && prevVal < simVars->altAltitude)) {
-    //        autopilotAlt = AltHold;
-    //    }
-    //}
-
     return altitude;
 }
 
@@ -1038,4 +1053,20 @@ int autopilot::adjustVerticalSpeed(int adjust)
     }
 
     return verticalSpeed;
+}
+
+double autopilot::adjustFpa(int adjust)
+{
+    // Adjust in 0.1 degree increments between -9.9 and 9.9
+    fpaX10 += adjust;
+
+    if (fpaX10 < -99) {
+        fpaX10 = -99;
+    }
+    else if (fpaX10 > 99)
+    {
+        fpaX10 = 99;
+    }
+
+    return fpaX10;
 }

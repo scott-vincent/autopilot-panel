@@ -42,6 +42,7 @@ private:
     int heading;
     int altitude;
     int verticalSpeed;
+    int fpaX10 = 0;
     bool apEnabled;
     bool fdEnabled;
     bool athrEnabled;
@@ -91,6 +92,7 @@ private:
     time_t lastAltAdjust = 0;
     time_t lastAltPush = 0;
     time_t lastVsAdjust = 0;
+    time_t lastVsPush = 0;
     time_t lastApAdjust = 0;
     time_t lastFdAdjust = 0;
     time_t lastAthrAdjust = 0;
@@ -124,6 +126,7 @@ private:
     int adjustHeading(int adjust);
     int adjustAltitude(int adjust);
     int adjustVerticalSpeed(int adjust);
+    double adjustFpa(int adjust);
 };
 
 #endif // _AUTOPILOT_H

@@ -10,6 +10,7 @@ private:
 public:
 	sevensegment(bool initWiringPi, int spiChannel);
 	void getSegData(unsigned char* buf, int bufSize, int num, int fixedSize);
+	void getSegDegrees(unsigned char* buf, int bufSize, int numX10);
 	void blankSegData(unsigned char* buf, int bufSize, bool wantMinus);
 	void decimalSegData(unsigned char* buf, int pos);
 	void writeSegData3(unsigned char* buf1, unsigned char* buf2, unsigned char* buf3);

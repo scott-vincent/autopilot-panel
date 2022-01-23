@@ -116,6 +116,48 @@ void sevensegment::getSegData(unsigned char* buf, int bufSize, int num, int fixe
 }
 
 /// <summary>
+// Converts a number of degrees (-9.9 to 9.9) to segment display data.
+// Minus sign added if number negative.
+/// </summary>
+void sevensegment::getSegDegrees(unsigned char* buf, int bufSize, int numX10)
+{
+    bool minus = false;
+
+    if (numX10 < 0) {
+        minus = true;
+        numX10 = -numX10;
+    }
+
+    // Start with 2 blanks
+    int pos = bufSize - 1;
+    buf[pos] = 0x0f;
+    pos--;
+    buf[pos] = 0x0f;
+    pos--;
+
+    // One digit after decimal point
+    buf[pos] = numX10 % 10;
+    pos--;
+
+    // One digit with decimal point
+    buf[pos] = (numX10 / 10) | 0x80;;
+    pos--;
+
+    // If there is still room add minus sign and blanks
+    if (pos >= 0) {
+        if (minus) {
+            buf[pos] = 0x0a;
+            pos--;
+        }
+
+        for (; pos >= 0; pos--) {
+            // Pad with blank
+            buf[pos] = 0x0f;
+        }
+    }
+}
+
+/// <summary>
 /// Blanks the display at the specified position.
 /// If wantMinus is true minus signs are displayed instead of blanks.
 /// </summary>
