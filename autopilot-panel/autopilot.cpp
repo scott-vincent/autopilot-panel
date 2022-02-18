@@ -130,7 +130,7 @@ void autopilot::update()
         apprEnabled = simVars->autopilotGlideslopeHold;
         lastSetHeading = -1;
         setVerticalSpeed = 0;
-        if (loadedAircraft != FBW_A320NEO && loadedAircraft != BOEING_747) {
+        if (loadedAircraft != FBW_A320 && loadedAircraft != BOEING_747) {
             managedSpeed = false;
             managedHeading = false;
             managedAltitude = false;
@@ -150,14 +150,14 @@ void autopilot::update()
     if (lastSpdAdjust == 0) {
         mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
-        if (loadedAircraft == FBW_A320NEO) {
+        if (loadedAircraft == FBW_A320) {
             managedSpeed = simVars->jbManagedSpeed;
             showMach = simVars->jbAutothrustMode == 8;
         }
     }
     if (lastHdgAdjust == 0) {
         heading = simVars->autopilotHeading;
-        if (loadedAircraft == FBW_A320NEO) {
+        if (loadedAircraft == FBW_A320) {
             managedHeading = simVars->jbManagedHeading;
         }
 
@@ -175,7 +175,7 @@ void autopilot::update()
     }
     if (lastAltAdjust == 0) {
         altitude = simVars->autopilotAltitude;
-        if (loadedAircraft == FBW_A320NEO) {
+        if (loadedAircraft == FBW_A320) {
             managedAltitude = simVars->jbManagedAltitude;
         }
     }
@@ -239,7 +239,7 @@ void autopilot::update()
 
 void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
 {
-    if (loadedAircraft == FBW_A320NEO) {
+    if (loadedAircraft == FBW_A320) {
         // Convert events to A32NX specific events
         switch (id) {
         case KEY_AP_HDG_HOLD_OFF:
@@ -610,7 +610,7 @@ void autopilot::gpioVerticalSpeedInput()
         // If in selected mode, short press switches between HDG,V/S and TRK,FPA mode.
         // If in managed mode, short press switches to selected mode.
         if (prevVsPush % 2 == 1) {
-            if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW_A320NEO) {
+            if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW_A320) {
                 selectedVs();
             }
             else {
@@ -768,7 +768,7 @@ void autopilot::machSwap()
         showMach = true;
     }
 
-    if (loadedAircraft == FBW_A320NEO) {
+    if (loadedAircraft == FBW_A320) {
         sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
     }
 }

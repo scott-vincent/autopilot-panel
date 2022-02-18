@@ -42,7 +42,7 @@ void updateCommon()
     SimVars* simVars = &globals.simVars->simVars;
 
     // Electrics check
-    if (globals.aircraft == FBW_A320NEO) {
+    if (globals.aircraft == FBW_A320) {
         // Autopilot only comes on if both batteries on or
         // have external power, APU or main engines running.
         globals.electrics = globals.connected && (simVars->dcVolts > 25.4 ||
