@@ -11,7 +11,7 @@ extern const char* SimVarDefs[][2];
 bool prevConnected = false;
 long dataSize;
 Request request;
-char deltaData[2048];
+char deltaData[8192];
 
 void dataLink(simvars*);
 void identifyAircraft(char* aircraft);
@@ -185,6 +185,11 @@ void dataLink(simvars* thisPtr)
                 }
                 else if (bytes > 0) {
                     if (bytes == dataSize) {
+                        time_t now;
+                        time(&now);
+                        printf("fullData: %d  ap: %f  at: %f  %s", dataSize,
+                            globals.simVars->simVars.autopilotEngaged, globals.simVars->simVars.autothrottleActive, asctime(localtime(&now)));
+                        fflush(stdout);
                         // Full data received
                         memcpy((char*)&thisPtr->simVars, deltaData, dataSize);
 
