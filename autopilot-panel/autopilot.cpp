@@ -144,14 +144,6 @@ void autopilot::update()
     gpioVerticalSpeedInput();
     gpioButtonsInput();
 
-    // Debug code
-    if (ap != simVars->autopilotEngaged || at != simVars->autothrottleActive) {
-        printf("ap: %f  at: %f  %s", simVars->autopilotEngaged, simVars->autothrottleActive, asctime(localtime(&now)));
-        fflush(stdout);
-        ap = simVars->autopilotEngaged;
-        at = simVars->autothrottleActive;
-    }
-
     // Only update local values from sim if they are not currently being
     // adjusted by the rotary encoders. This stops the displayed values
     // from jumping around due to lag of fetch/update cycle.

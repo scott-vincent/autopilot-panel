@@ -99,8 +99,6 @@ private:
     time_t lastLocAdjust = 0;
     time_t lastApprAdjust = 0;
     time_t now;
-    int ap = -1;
-    int at = -1;
 
 public:
     autopilot();

@@ -48,8 +48,6 @@ void identifyAircraft(char* aircraft)
             }
         }
         strcpy(globals.lastAircraft, aircraft);
-        printf("Aircraft: %s\n", aircraft);
-        fflush(stdout);
     }
 }
 
@@ -58,9 +56,9 @@ void identifyAircraft(char* aircraft)
 /// </summary>
 void receiveDelta(char *deltaData, long deltaSize, char* simVarsPtr)
 {
-    char* dataPtr = &deltaData[0];
+    char* dataPtr = deltaData;
 
-    long fullDeltaSize = deltaSize;
+    long tempDeltaSize = deltaSize;
     while (deltaSize > 0) {
         DeltaDouble* deltaDouble = (DeltaDouble*)dataPtr;
         if (deltaDouble->offset & 0x10000) {
@@ -81,16 +79,6 @@ void receiveDelta(char *deltaData, long deltaSize, char* simVarsPtr)
 
             dataPtr += deltaDoubleSize;
             deltaSize -= deltaDoubleSize;
-
-            //// Debug code
-            //int offset = deltaDouble->offset / 8;
-            //if (offset != 0 && offset != 28 && offset != 63 && offset != 64 && offset != 86) {
-            //    time_t now;
-            //    time(&now);
-            //    printf("deltaSize: %d  offset: %d  val: %f  ap: %f  at: %f  %s", fullDeltaSize / 16, offset, deltaDouble->data,
-            //        globals.simVars->simVars.autopilotEngaged, globals.simVars->simVars.autothrottleActive, asctime(localtime(&now)));
-            //    fflush(stdout);
-            //}
         }
     }
 }
