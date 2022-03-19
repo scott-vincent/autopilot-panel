@@ -115,6 +115,7 @@ private:
     void gpioButtonsInput();
     void machSwap();
     void toggleFlightDirector();
+    void captureInitial();
     void manSelSpeed();
     void manSelHeading();
     void manSelAltitude();

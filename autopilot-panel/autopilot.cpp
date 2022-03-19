@@ -646,11 +646,20 @@ void autopilot::gpioButtonsInput()
             apEnabled = !apEnabled;
             globals.gpioCtrl->writeLed(autopilotControl, apEnabled);
 
-            // Capture current values if autopilot has been engaged
+            // Capture values if autopilot has been engaged
             if (apEnabled) {
-                captureCurrent();
+                if (airliner && fdEnabled) {
+                    captureInitial();
+                }
+                else {
+                    captureCurrent();
+                }
             }
             sendEvent(KEY_AP_MASTER);
+
+            if (apEnabled && airliner && fdEnabled) {
+                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+            }
         }
         prevApPush = val;
         time(&lastApAdjust);
@@ -806,6 +815,45 @@ void autopilot::toggleFlightDirector()
         sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 1);
         sendEvent(KEY_HEADING_BUG_SET, simVars->hiHeading);
     }
+
+    sendEvent(KEY_AP_ALT_HOLD_ON);
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    sendEvent(KEY_AP_AIRSPEED_ON);
+
+    managedSpeed = false;
+    sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
+    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+
+    managedAltitude = true;
+    sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
+    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+}
+
+/// <summary>
+/// Autopilot engaged on airliner so capture values
+/// that have already been set (or set minimums).
+/// </summary>
+void autopilot::captureInitial()
+{
+    // Initial settings
+    int holdSpeed = simVars->autopilotAirspeed;
+    if (holdSpeed < 210) {
+        holdSpeed = 210;
+    }
+
+    setAltitude = simVars->autopilotAltitude;
+    if (setAltitude < 3000) {
+        setAltitude = 3000;
+    }
+
+    setVerticalSpeed = simVars->autopilotVerticalSpeed;
+    if (setVerticalSpeed < 1500) {
+        setVerticalSpeed = 1500;
+    }
+
+    // Use managed heading
+    managedHeading = true;
+    sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 2);
 
     sendEvent(KEY_AP_ALT_HOLD_ON);
     sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
