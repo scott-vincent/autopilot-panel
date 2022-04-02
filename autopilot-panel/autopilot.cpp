@@ -874,7 +874,11 @@ void autopilot::captureInitial()
 /// </summary>
 void autopilot::manSelSpeed()
 {
-    if (!airliner || !fdEnabled) {
+    if (!airliner) {
+        return;
+    }
+
+    if (!fdEnabled) {
         managedSpeed = false;
     }
     else {
@@ -895,7 +899,11 @@ void autopilot::manSelSpeed()
 /// </summary>
 void autopilot::manSelHeading()
 {
-    if (!airliner || !fdEnabled) {
+    if (!airliner) {
+        return;
+    }
+
+    if (!fdEnabled) {
         managedHeading = false;
     }
     else {
@@ -917,11 +925,10 @@ void autopilot::manSelHeading()
 void autopilot::manSelAltitude()
 {
     if (!airliner) {
-        managedAltitude = false;
+        return;
     }
-    else {
-        managedAltitude = !managedAltitude;
-    }
+
+    managedAltitude = !managedAltitude;
 
     if (managedAltitude) {
         sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
