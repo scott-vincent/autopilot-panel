@@ -34,6 +34,9 @@ void identifyAircraft(char* aircraft)
         else if (strncmp(aircraft, globals.Boeing_747_Text, globals.Boeing_747_Len) == 0) {
             globals.aircraft = BOEING_747;
         }
+        else if (strncmp(aircraft, globals.Salty_Boeing_747_Text, globals.Salty_Boeing_747_Len) == 0) {
+            globals.aircraft = BOEING_747;
+        }
         else if (strncmp(aircraft, globals.Supermarine_Spitfire_Text, globals.Supermarine_Spitfire_Len) == 0) {
             globals.aircraft = SUPERMARINE_SPITFIRE;
         }
