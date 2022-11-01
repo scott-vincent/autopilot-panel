@@ -991,10 +991,12 @@ void autopilot::captureVerticalSpeed()
 
     if (setAltitude < simVars->altAltitude && simVars->autopilotVerticalSpeed >= 0) {
         setVerticalSpeed = -700;
+        sendEvent(KEY_AP_VS_SET, 1);
         sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
     }
     else if (setAltitude > simVars->altAltitude && simVars->autopilotVerticalSpeed <= 0) {
         setVerticalSpeed = 700;
+        sendEvent(KEY_AP_VS_SET, 1);
         sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
     }
     else {
@@ -1096,10 +1098,12 @@ int autopilot::adjustAltitude(int adjust)
     if (diff > 400) {
         if (altitude < simVars->altAltitude && setVerticalSpeed >= 0) {
             setVerticalSpeed = -700;
+            sendEvent(KEY_AP_VS_SET, 1);
             sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
         }
         else if (altitude > simVars->altAltitude && setVerticalSpeed <= 0) {
             setVerticalSpeed = 700;
+            sendEvent(KEY_AP_VS_SET, 1);
             sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
         }
     }
