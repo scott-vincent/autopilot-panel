@@ -48,6 +48,10 @@ void updateCommon()
         globals.electrics = globals.connected && (simVars->dcVolts > 25.4 ||
             (simVars->elecBat1 > 0 && simVars->elecBat2 > 0));
     }
+    else if (globals.aircraft == AIRBUS_A310) {
+        // Autopilot does not work until pitch trim on (and pitch trim switches off if ADIRS not aligned)
+        globals.electrics = globals.connected && simVars->batteryLoad < 0 && simVars->jbPitchTrim != 0;
+    }
     else {
         globals.electrics = globals.connected && simVars->dcVolts > 0;
     }

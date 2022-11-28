@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "gpioctrl.h"
 #include "autopilot.h"
 
@@ -83,7 +84,12 @@ void autopilot::render()
     }
 
     // Vertical speed
-    if (autopilotAlt == VerticalSpeedHold) {
+    if (loadedAircraft == AIRBUS_A310 && !managedAltitude) {
+        // For A310, managedAltitude == Selected VS
+        sevenSegment->blankSegData(display3, 3, false);
+        sevenSegment->blankSegData(&display3[3], 5, true);
+    }
+    else if (autopilotAlt == VerticalSpeedHold) {
         sevenSegment->getSegData(display3, 8, verticalSpeed, 4);
     }
     else if (simVars->autopilotVerticalHold == -1) {
@@ -130,7 +136,7 @@ void autopilot::update()
         apprEnabled = simVars->autopilotGlideslopeHold;
         lastSetHeading = -1;
         setVerticalSpeed = 0;
-        if (loadedAircraft != FBW_A320 && loadedAircraft != BOEING_747) {
+        if (loadedAircraft != AIRBUS_A310 && loadedAircraft != FBW_A320 && loadedAircraft != BOEING_747) {
             managedSpeed = false;
             managedHeading = false;
             managedAltitude = false;
@@ -150,14 +156,18 @@ void autopilot::update()
     if (lastSpdAdjust == 0) {
         mach = simVars->autopilotMach;
         speed = simVars->autopilotAirspeed;
-        if (loadedAircraft == FBW_A320) {
+        if (loadedAircraft == AIRBUS_A310) {
+            managedSpeed = simVars->jbManagedSpeed;
+            showMach = simVars->jbShowMach != 0;
+        }
+        else if (loadedAircraft == FBW_A320) {
             managedSpeed = simVars->jbManagedSpeed;
             showMach = simVars->jbAutothrustMode == 8;
         }
     }
     if (lastHdgAdjust == 0) {
         heading = simVars->autopilotHeading;
-        if (loadedAircraft == FBW_A320) {
+        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW_A320) {
             managedHeading = simVars->jbManagedHeading;
         }
 
@@ -175,7 +185,7 @@ void autopilot::update()
     }
     if (lastAltAdjust == 0) {
         altitude = simVars->autopilotAltitude;
-        if (loadedAircraft == FBW_A320) {
+        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW_A320) {
             managedAltitude = simVars->jbManagedAltitude;
         }
     }
@@ -232,7 +242,7 @@ void autopilot::update()
     }
 
     // If pressing brake pedal cancel the autobrake
-    if (simVars->jbAutobrake > 0 && simVars->brakePedal > 5) {
+    if (simVars->jbAutobrake > 0 && (simVars->brakeLeftPedal > 5 || simVars->brakeRightPedal > 5)) {
         sendEvent(KEY_AUTOBRAKE, 0);
     }
 }
@@ -343,7 +353,12 @@ void autopilot::gpioSpeedInput()
             // Adjust speed
             if (showMach) {
                 double newVal = adjustMach(adjust);
-                sendEvent(KEY_AP_MACH_VAR_SET, newVal * 100 + 0.5);
+                if (loadedAircraft == AIRBUS_A310) {
+                    sendEvent(KEY_AP_SPD_VAR_SET, newVal);
+                }
+                else {
+                    sendEvent(KEY_AP_MACH_VAR_SET, newVal * 100 + 0.5);
+                }
             }
             else {
                 double newVal = adjustSpeed(adjust);
@@ -647,7 +662,7 @@ void autopilot::gpioButtonsInput()
             globals.gpioCtrl->writeLed(autopilotControl, apEnabled);
 
             // Capture values if autopilot has been engaged
-            if (apEnabled) {
+            if (apEnabled && loadedAircraft != AIRBUS_A310) {
                 if (airliner && fdEnabled) {
                     captureInitial();
                 }
@@ -655,7 +670,23 @@ void autopilot::gpioButtonsInput()
                     captureCurrent();
                 }
             }
-            sendEvent(KEY_AP_MASTER);
+            double value = 0;
+            if (apEnabled) {
+                value = 1;
+            }
+            sendEvent(KEY_AP_MASTER, value);
+
+            if (apEnabled && loadedAircraft == AIRBUS_A310) {
+                if (loadedAircraft == AIRBUS_A310) {
+                    // Enable autothrottle and flight director
+                    athrEnabled = true;
+                    globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
+                    sendEvent(KEY_AUTO_THROTTLE_ARM, 1);
+                    fdEnabled = true;
+                    globals.gpioCtrl->writeLed(flightDirectorControl, fdEnabled);
+                    toggleFlightDirector();
+                }
+            }
 
             if (apEnabled && airliner && fdEnabled) {
                 sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
@@ -706,8 +737,17 @@ void autopilot::gpioButtonsInput()
             // Toggle autothrottle
             athrEnabled = !athrEnabled;
             globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
+            double value = 0;
+            if (athrEnabled) {
+                value = 1;
+            }
+            sendEvent(KEY_AUTO_THROTTLE_ARM, value);
 
-            sendEvent(KEY_AUTO_THROTTLE_ARM);
+            if (athrEnabled && loadedAircraft == AIRBUS_A310) {
+                managedSpeed = false;
+                sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
+                sendEvent(KEY_AP_SPD_VAR_SET, 210);
+            }
         }
         prevAthrPush = val;
         time(&lastAthrAdjust);
@@ -725,11 +765,14 @@ void autopilot::gpioButtonsInput()
             // Toggle localiser
             locEnabled = !locEnabled;
             globals.gpioCtrl->writeLed(localiserControl, locEnabled);
-
             if (apprEnabled) {
                 sendEvent(KEY_AP_APR_HOLD_OFF);
             }
-            sendEvent(KEY_AP_LOC_HOLD);
+            double value = 0;
+            if (locEnabled) {
+                value = 1;
+            }
+            sendEvent(KEY_AP_LOC_HOLD, value);
         }
         prevLocPush = val;
         time(&lastLocAdjust);
@@ -772,9 +815,25 @@ void autopilot::machSwap()
 {
     if (showMach) {
         showMach = false;
+        if (loadedAircraft == AIRBUS_A310) {
+            mach = simVars->autopilotAirspeed;
+            sendEvent(KEY_AP_MACH_OFF);
+            double celsius = 15 - 0.0019812 * simVars->altAltitude;
+            double soundKnots = (sqrt(492 * (340 + celsius * 3.9)) - 107) * 1.94384;
+            speed = mach * soundKnots;
+            sendEvent(KEY_AP_SPD_VAR_SET, speed);
+        }
     }
     else {
         showMach = true;
+        if (loadedAircraft == AIRBUS_A310) {
+            speed = simVars->autopilotAirspeed;
+            sendEvent(KEY_AP_MACH_ON);
+            double celsius = 15 - 0.0019812 * simVars->altAltitude;
+            double soundKnots = (sqrt(492 * (340 + celsius * 3.9)) - 107) * 1.94384;
+            mach = speed / soundKnots;
+            sendEvent(KEY_AP_SPD_VAR_SET, mach);
+        }
     }
 
     if (loadedAircraft == FBW_A320) {
@@ -792,7 +851,11 @@ void autopilot::toggleFlightDirector()
         return;
     }
 
-    sendEvent(KEY_TOGGLE_FLIGHT_DIRECTOR);
+    double value = 0;
+    if (fdEnabled) {
+        value = 1;
+    }
+    sendEvent(KEY_TOGGLE_FLIGHT_DIRECTOR, value);
 
     // Adjust autopilot settings if just after take off
     if (simVars->altAltitude > 4000 || simVars->vsiVerticalSpeed < 1) {
@@ -817,12 +880,16 @@ void autopilot::toggleFlightDirector()
     }
 
     sendEvent(KEY_AP_ALT_HOLD_ON);
-    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    if (simVars->autopilotAltitude < setAltitude) {
+        sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    }
     sendEvent(KEY_AP_AIRSPEED_ON);
 
     managedSpeed = false;
     sendEvent(KEY_AP_SPEED_SLOT_INDEX_SET, 1);
-    sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+    if (simVars->autopilotAirspeed < holdSpeed) {
+        sendEvent(KEY_AP_SPD_VAR_SET, holdSpeed);
+    }
 
     managedAltitude = true;
     sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
@@ -870,7 +937,6 @@ void autopilot::captureInitial()
 
 /// <summary>
 /// Switch between managed and selected speed.
-/// This is undocumented but works for the Airbus A320 neo.
 /// </summary>
 void autopilot::manSelSpeed()
 {
@@ -895,7 +961,6 @@ void autopilot::manSelSpeed()
 
 /// <summary>
 /// Switch between managed and selected heading.
-/// This is undocumented but works for the Airbus A320 neo.
 /// </summary>
 void autopilot::manSelHeading()
 {
@@ -920,7 +985,6 @@ void autopilot::manSelHeading()
 
 /// <summary>
 /// Switch between managed and selected altitude.
-/// This is undocumented but works for the Airbus A320 neo.
 /// </summary>
 void autopilot::manSelAltitude()
 {
@@ -941,8 +1005,12 @@ void autopilot::manSelAltitude()
 void autopilot::selectedVs()
 {
     autopilotAlt = VerticalSpeedHold;
+    if (loadedAircraft == AIRBUS_A310) {
+        sendEvent(KEY_AP_VS_SET);
+    }
     sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
     sendEvent(KEY_AP_ALT_HOLD_ON);
+
     if (loadedAircraft == BOEING_747) {
         // B747 Bug - Try to force aircraft into VS mode
         manSelAltitude();
@@ -1002,21 +1070,6 @@ void autopilot::captureVerticalSpeed()
     else {
         setVerticalSpeed = simVars->autopilotVerticalSpeed;
     }
-}
-
-void autopilot::restoreVerticalSpeed()
-{
-    // Ignore if autopilot disabled or altitude already reached
-    if (!apEnabled ||
-        (setVerticalSpeed < 0 && simVars->altAltitude < simVars->autopilotAltitude) ||
-        (setVerticalSpeed > 0 && simVars->altAltitude > simVars->autopilotAltitude)) {
-        setVerticalSpeed = 0;
-        return;
-    }
-
-    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
-    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
-    sendEvent(KEY_AP_ALT_HOLD_ON);
 }
 
 int autopilot::adjustSpeed(int adjust)
