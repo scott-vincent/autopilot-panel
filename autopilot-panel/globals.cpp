@@ -19,6 +19,9 @@ void identifyAircraft(char* aircraft)
         else if (strncmp(aircraft, globals.Cessna_CJ4_Text, globals.Cessna_CJ4_Len) == 0) {
             globals.aircraft = CESSNA_CJ4;
         }
+        else if (strncmp(aircraft, globals.Cessna_Longitude_Text, globals.Cessna_Longitude_Len) == 0) {
+            globals.aircraft = CESSNA_LONGITUDE;
+        }
         else if (strncmp(aircraft, globals.Savage_Cub_Text, globals.Savage_Cub_Len) == 0) {
             globals.aircraft = SAVAGE_CUB;
         }

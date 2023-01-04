@@ -676,8 +676,8 @@ void autopilot::gpioButtonsInput()
             }
             sendEvent(KEY_AP_MASTER, value);
 
-            if (apEnabled && loadedAircraft == AIRBUS_A310) {
-                if (loadedAircraft == AIRBUS_A310) {
+            if (apEnabled) {
+                if (loadedAircraft == AIRBUS_A310 || loadedAircraft == CESSNA_LONGITUDE) {
                     // Enable autothrottle and flight director
                     athrEnabled = true;
                     globals.gpioCtrl->writeLed(autothrottleControl, athrEnabled);
@@ -921,6 +921,7 @@ void autopilot::captureInitial()
     // Use managed heading
     managedHeading = true;
     sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 2);
+    sendEvent(KEY_AP_PANEL_HEADING_SET, 0);
 
     sendEvent(KEY_AP_ALT_HOLD_ON);
     sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
@@ -977,9 +978,11 @@ void autopilot::manSelHeading()
 
     if (managedHeading) {
         sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 2);
+        sendEvent(KEY_AP_PANEL_HEADING_SET, 0);
     }
     else {
         sendEvent(KEY_AP_HEADING_SLOT_INDEX_SET, 1);
+        sendEvent(KEY_AP_PANEL_HEADING_SET, 1);
     }
 }
 
