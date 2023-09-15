@@ -54,6 +54,8 @@ private:
     bool managedSpeed = false;
     bool managedHeading = false;
     bool managedAltitude = false;
+    int orbit = 0;  // 1 = left orbit, 2 = right orbit
+    int orbitDelay = 0;
 
     // Hardware controls
     int speedControl = -1;
@@ -84,6 +86,17 @@ private:
     int prevAthrPush = 0;
     int prevLocPush = 0;
     int prevApprPush = 0;
+    int prevSpdValSb = 0;
+    int prevSpdPushSb = 0;
+    int prevHdgValSb = 0;
+    int prevHdgPushSb = 0;
+    int prevAltValSb = 0;
+    int prevAltPushSb = 0;
+    int prevVsValSb = 0;
+    int prevVsPushSb = 0;
+    int prevApPushSb = 0;
+    int prevLocPushSb = 0;
+    int prevApprPushSb = 0;
 
     time_t lastSpdAdjust = 0;
     time_t lastSpdPush = 0;
@@ -129,6 +142,7 @@ private:
     int adjustAltitude(int adjust);
     int adjustVerticalSpeed(int adjust);
     double adjustFpa(int adjust);
+    void continueOrbit();
 };
 
 #endif // _AUTOPILOT_H

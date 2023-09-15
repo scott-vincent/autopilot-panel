@@ -141,6 +141,17 @@ void autopilot::update()
             managedHeading = false;
             managedAltitude = false;
         }
+        prevSpdValSb = simVars->sbEncoder[2];
+        prevSpdPushSb = simVars->sbButton[2];
+        prevHdgValSb = simVars->sbEncoder[3];
+        prevHdgPushSb = simVars->sbButton[3];
+        prevAltValSb = simVars->sbEncoder[1];
+        prevAltPushSb = simVars->sbButton[1];
+        prevVsValSb = simVars->sbEncoder[0];
+        prevVsPushSb = simVars->sbButton[0];
+        prevApPushSb = simVars->sbButton[6];
+        prevLocPushSb = simVars->sbButton[5];
+        prevApprPushSb = simVars->sbButton[4];
     }
 
     time(&now);
@@ -164,6 +175,9 @@ void autopilot::update()
             managedSpeed = simVars->jbManagedSpeed;
             showMach = simVars->jbAutothrustMode == 8;
         }
+    }
+    if (orbit > 0) {
+        continueOrbit();
     }
     if (lastHdgAdjust == 0) {
         heading = simVars->autopilotHeading;
@@ -339,8 +353,22 @@ void autopilot::gpioSpeedInput()
 {
     // Speed rotate
     int val = globals.gpioCtrl->readRotation(speedControl);
+    int diff = (val - prevSpdVal) / 4;
+    bool switchBox = false;
+
+    //if (simVars->sbMode != 1) {
+    //    prevSpdValSb = simVars->sbEncoder[2];
+    //}
+    //else if (simVars->sbEncoder[2] != prevSpdValSb) {
+    //    val = simVars->sbEncoder[2];
+    //    diff = (val - prevSpdValSb) / 2;
+    //    if (diff == 0) {
+    //        val = INT_MIN;
+    //    }
+    //    switchBox = true;
+    //}
+
     if (val != INT_MIN) {
-        int diff = (val - prevSpdVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -364,7 +392,12 @@ void autopilot::gpioSpeedInput()
                 double newVal = adjustSpeed(adjust);
                 sendEvent(KEY_AP_SPD_VAR_SET, newVal);
             }
-            prevSpdVal = val;
+            if (switchBox) {
+                prevSpdValSb = val;
+            }
+            else {
+                prevSpdVal = val;
+            }
         }
         time(&lastSpdAdjust);
     }
@@ -378,8 +411,20 @@ void autopilot::gpioSpeedInput()
 
     // Speed push
     val = globals.gpioCtrl->readPush(speedControl);
+    int prevVal = prevSpdPush;
+    switchBox = false;
+
+    //if (simVars->sbMode != 1 || prevSpdPushSb == 0) {
+    //    prevSpdPushSb = simVars->sbButton[2];
+    //}
+    //else if (simVars->sbButton[2] != prevSpdPushSb) {
+    //    val = simVars->sbButton[2];
+    //    prevVal = prevSpdPushSb;
+    //    switchBox = true;
+    //}
+
     if (val != INT_MIN) {
-        if (prevSpdPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Short press switches between 5 knot and 1 knot increments
             // Default is 5 knots
             if (spdSetSel == 0) {
@@ -395,7 +440,12 @@ void autopilot::gpioSpeedInput()
             // Released
             lastSpdPush = 0;
         }
-        prevSpdPush = val;
+        if (switchBox) {
+            prevSpdPushSb = val;
+        }
+        else {
+            prevSpdPush = val;
+        }
     }
 
     // Speed long push (over 1 sec)
@@ -426,8 +476,19 @@ void autopilot::gpioHeadingInput()
 {
     // Heading rotate
     int val = globals.gpioCtrl->readRotation(headingControl);
+    int diff = (val - prevHdgVal) / 4;
+    bool switchBox = false;
+
+    if (simVars->sbMode != 1) {
+        prevHdgValSb = simVars->sbEncoder[3];
+    }
+    else if (simVars->sbEncoder[3] != prevHdgValSb) {
+        val = simVars->sbEncoder[3];
+        diff = val - prevHdgValSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        int diff = (val - prevHdgVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -440,7 +501,12 @@ void autopilot::gpioHeadingInput()
             // Adjust heading
             double newVal = adjustHeading(adjust);
             sendEvent(KEY_HEADING_BUG_SET, newVal);
-            prevHdgVal = val;
+            if (switchBox) {
+                prevHdgValSb = val;
+            }
+            else {
+                prevHdgVal = val;
+            }
         }
         time(&lastHdgAdjust);
     }
@@ -453,8 +519,20 @@ void autopilot::gpioHeadingInput()
 
     // Heading push
     val = globals.gpioCtrl->readPush(headingControl);
+    int prevVal = prevHdgPush;
+    switchBox = false;
+
+    if (simVars->sbMode != 1 || prevHdgPushSb == 0) {
+        prevHdgPushSb = simVars->sbButton[3];
+    }
+    else if (simVars->sbButton[3] != prevHdgPushSb) {
+        val = simVars->sbButton[3];
+        prevVal = prevHdgPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        if (prevHdgPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Short press switches between 5 degree and 1 degree increments
             // Default is 1 degree
             if (hdgSetSel == 0) {
@@ -470,33 +548,79 @@ void autopilot::gpioHeadingInput()
             // Released
             lastHdgPush = 0;
         }
-        prevHdgPush = val;
+        if (switchBox) {
+            prevHdgPushSb = val;
+        }
+        else {
+            prevHdgPush = val;
+        }
     }
 
     // Heading long push (over 1 sec)
     if (lastHdgPush > 0) {
         if (now - lastHdgPush > 1) {
-            // Long press switches between managed and selected when flight
-            // director is active or toggles heading hold when it isn't.
-            double setHeading = simVars->hiHeading;
-            if (airliner && fdEnabled) {
-                manSelHeading();
-                if (!managedHeading) {
-                    // Keep same heading when managed mode turned off
-                    sendEvent(KEY_HEADING_BUG_SET, setHeading);
+            if (orbit > 0) {
+                // Turn orbit off - Allow 20 degrees to stop turn
+                if (orbit == 1) {
+                    heading = simVars->hiHeading - 20.0;
+                    if (heading < 0.0) {
+                        heading += 360.0;
+                    }
                 }
-            }
-            else if (autopilotHdg == HdgSet) {
-                autopilotHdg = LevelFlight;
-                sendEvent(KEY_AP_HDG_HOLD_OFF);
-                manSelHeading();
-                // Keep same heading when heading hold turned off
-                sendEvent(KEY_HEADING_BUG_SET, setHeading);
+                else {
+                    heading = simVars->hiHeading + 20.0;
+                    if (heading >= 360.0) {
+                        heading -= 360.0;
+                    }
+                }
+
+                sendEvent(KEY_HEADING_BUG_SET, heading);
+                time(&lastHdgAdjust);
+                orbit = 0;
             }
             else {
-                autopilotHdg = HdgSet;
-                sendEvent(KEY_AP_HDG_HOLD_ON);
-                manSelHeading();
+                // Long press switches between managed and selected when flight
+                // director is active or toggles heading hold when it isn't.
+                double setHeading = simVars->hiHeading;
+                if (airliner && fdEnabled) {
+                    manSelHeading();
+                    if (!managedHeading) {
+                        // Keep same heading when managed mode turned off
+                        sendEvent(KEY_HEADING_BUG_SET, setHeading);
+                    }
+                }
+                else if (autopilotHdg == HdgSet) {
+                    if (apEnabled && !airliner) {
+                        // Turn orbit on if heading bug is at least 90 degrees left or right of current heading
+                        int diff = simVars->hiHeading - simVars->autopilotHeading;
+                        if (diff < 0) {
+                            diff += 360;
+                        }
+
+                        if (diff > 90 && diff < 180) {
+                            orbit = 1;
+                        }
+                        else if (diff > 180 && diff < 270) {
+                            orbit = 2;
+                        }
+                    }
+
+                    if (orbit > 0) {
+                        continueOrbit();
+                    }
+                    else {
+                        autopilotHdg = LevelFlight;
+                        sendEvent(KEY_AP_HDG_HOLD_OFF);
+                        manSelHeading();
+                        // Keep same heading when heading hold turned off
+                        sendEvent(KEY_HEADING_BUG_SET, setHeading);
+                    }
+                }
+                else {
+                    autopilotHdg = HdgSet;
+                    sendEvent(KEY_AP_HDG_HOLD_ON);
+                    manSelHeading();
+                }
             }
             hdgSetSel = 0;
             lastHdgPush = 0;
@@ -509,8 +633,19 @@ void autopilot::gpioAltitudeInput()
 {
     // Altitude rotate
     int val = globals.gpioCtrl->readRotation(altitudeControl);
+    int diff = (val - prevAltVal) / 4;
+    bool switchBox = false;
+
+    if (simVars->sbMode != 1) {
+        prevAltValSb = simVars->sbEncoder[1];
+    }
+    else if (simVars->sbEncoder[1] != prevAltValSb) {
+        val = simVars->sbEncoder[1];
+        diff = val - prevAltValSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        int diff = (val - prevAltVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -526,7 +661,12 @@ void autopilot::gpioAltitudeInput()
             if (setVerticalSpeed != 0) {
                 setAltitude = newVal;
             }
-            prevAltVal = val;
+            if (switchBox) {
+                prevAltValSb = val;
+            }
+            else {
+                prevAltVal = val;
+            }
         }
         time(&lastAltAdjust);
     }
@@ -540,8 +680,20 @@ void autopilot::gpioAltitudeInput()
 
     // Altitude push
     val = globals.gpioCtrl->readPush(altitudeControl);
+    int prevVal = prevAltPush;
+    switchBox = false;
+
+    if (simVars->sbMode != 1 || prevAltPushSb == 0) {
+        prevAltPushSb = simVars->sbButton[1];
+    }
+    else if (simVars->sbButton[1] != prevAltPushSb) {
+        val = simVars->sbButton[1];
+        prevVal = prevAltPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        if (prevAltPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Short press switches between 1000ft and 100ft increments
             if (altSetSel == 1) {
                 altSetSel = 0;
@@ -556,7 +708,12 @@ void autopilot::gpioAltitudeInput()
             // Released
             lastAltPush = 0;
         }
-        prevAltPush = val;
+        if (switchBox) {
+            prevAltPushSb = val;
+        }
+        else {
+            prevAltPush = val;
+        }
     }
 
     // Altitude long push (over 1 sec)
@@ -584,8 +741,19 @@ void autopilot::gpioVerticalSpeedInput()
 {
     // Vertical speed rotate
     int val = globals.gpioCtrl->readRotation(verticalSpeedControl);
+    int diff = (val - prevVsVal) / 4;
+    bool switchBox = false;
+
+    if (simVars->sbMode != 1) {
+        prevVsValSb = simVars->sbEncoder[0];
+    }
+    else if (simVars->sbEncoder[0] != prevVsValSb) {
+        val = simVars->sbEncoder[0];
+        diff = val - prevVsValSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        int diff = (val - prevVsVal) / 4;
         int adjust = 0;
         if (diff > 0) {
             adjust = 1;
@@ -609,7 +777,12 @@ void autopilot::gpioVerticalSpeedInput()
                     setVerticalSpeed = newVal;
                 }
             }
-            prevVsVal = val;
+            if (switchBox) {
+                prevVsValSb = val;
+            }
+            else {
+                prevVsVal = val;
+            }
         }
         time(&lastVsAdjust);
     }
@@ -621,10 +794,22 @@ void autopilot::gpioVerticalSpeedInput()
 
     // Vertical speed push
     val = globals.gpioCtrl->readPush(verticalSpeedControl);
+    int prevVal = prevVsPush;
+    switchBox = false;
+
+    if (simVars->sbMode != 1 || prevVsPushSb == 0) {
+        prevVsPushSb = simVars->sbButton[0];
+    }
+    else if (simVars->sbButton[0] != prevVsPushSb) {
+        val = simVars->sbButton[0];
+        prevVal = prevVsPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
         // If in selected mode, short press switches between HDG,V/S and TRK,FPA mode.
         // If in managed mode, short press switches to selected mode.
-        if (prevVsPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW_A320) {
                 selectedVs();
             }
@@ -638,7 +823,12 @@ void autopilot::gpioVerticalSpeedInput()
             // Released
             lastVsPush = 0;
         }
-        prevVsPush = val;
+        if (switchBox) {
+            prevVsPushSb = val;
+        }
+        else {
+            prevVsPush = val;
+        }
     }
 
     // V/S long push (over 1 sec)
@@ -655,8 +845,20 @@ void autopilot::gpioButtonsInput()
 {
     // Autopilot push
     int val = globals.gpioCtrl->readPush(autopilotControl);
+    int prevVal = prevApPush;
+    int switchBox = false;
+
+    if (simVars->sbMode != 1 || prevApPushSb == 0) {
+        prevApPushSb = simVars->sbButton[6];
+    }
+    else if (simVars->sbButton[6] != prevApPushSb) {
+        val = simVars->sbButton[6];
+        prevVal = prevApPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        if (prevApPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Toggle autopilot
             apEnabled = !apEnabled;
             globals.gpioCtrl->writeLed(autopilotControl, apEnabled);
@@ -692,7 +894,12 @@ void autopilot::gpioButtonsInput()
                 sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
             }
         }
-        prevApPush = val;
+        if (switchBox) {
+            prevApPushSb = val;
+        }
+        else {
+            prevApPush = val;
+        }
         time(&lastApAdjust);
     }
     else if (lastApAdjust != 0) {
@@ -760,8 +967,20 @@ void autopilot::gpioButtonsInput()
 
     // Localiser push
     val = globals.gpioCtrl->readPush(localiserControl);
+    prevVal = prevLocPush;
+    switchBox = false;
+
+    if (simVars->sbMode != 1 || prevLocPushSb == 0) {
+        prevLocPushSb = simVars->sbButton[5];
+    }
+    else if (simVars->sbButton[5] != prevLocPushSb) {
+        val = simVars->sbButton[5];
+        prevVal = prevLocPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        if (prevLocPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Toggle localiser
             locEnabled = !locEnabled;
             globals.gpioCtrl->writeLed(localiserControl, locEnabled);
@@ -774,7 +993,12 @@ void autopilot::gpioButtonsInput()
             }
             sendEvent(KEY_AP_LOC_HOLD, value);
         }
-        prevLocPush = val;
+        if (switchBox) {
+            prevLocPushSb = val;
+        }
+        else {
+            prevLocPush = val;
+        }
         time(&lastLocAdjust);
     }
     else if (lastLocAdjust != 0) {
@@ -785,8 +1009,20 @@ void autopilot::gpioButtonsInput()
 
     // Approach push
     val = globals.gpioCtrl->readPush(approachControl);
+    prevVal = prevApprPush;
+    switchBox = false;
+
+    if (simVars->sbMode != 1 || prevApprPushSb == 0) {
+        prevApprPushSb = simVars->sbButton[4];
+    }
+    else if (simVars->sbButton[4] != prevApprPushSb) {
+        val = simVars->sbButton[4];
+        prevVal = prevApprPushSb;
+        switchBox = true;
+    }
+
     if (val != INT_MIN) {
-        if (prevApprPush % 2 == 1) {
+        if (prevVal % 2 == 1) {
             // Toggle approach
             apprEnabled = !apprEnabled;
             globals.gpioCtrl->writeLed(approachControl, apprEnabled);
@@ -798,7 +1034,12 @@ void autopilot::gpioButtonsInput()
                 sendEvent(KEY_AP_APR_HOLD_OFF);
             }
         }
-        prevApprPush = val;
+        if (switchBox) {
+            prevApprPushSb = val;
+        }
+        else {
+            prevApprPush = val;
+        }
         time(&lastApprAdjust);
     }
     else if (lastApprAdjust != 0) {
@@ -1192,4 +1433,40 @@ double autopilot::adjustFpa(int adjust)
     }
 
     return fpaX10;
+}
+
+/// <summary>
+/// Hold mode for GA aircraft with autopilot.
+/// Keeps setting heading bug 90 degrees left or right of
+/// current track so aircraft will continue to orbit.
+/// </summary>
+void autopilot::continueOrbit()
+{
+    if (!apEnabled) {
+        orbit = 0;
+        return;
+    }
+
+    if (orbitDelay > 0) {
+        orbitDelay--;
+    }
+    else {
+        orbitDelay = 5;
+
+        if (orbit == 1) {
+            heading = simVars->hiHeading - 90.0;
+            if (heading < 0.0) {
+                heading += 360.0;
+            }
+        }
+        else {
+            heading = simVars->hiHeading + 90.0;
+            if (heading >= 360.0) {
+                heading -= 360.0;
+            }
+        }
+
+        sendEvent(KEY_HEADING_BUG_SET, heading);
+        time(&lastHdgAdjust);
+    }
 }
