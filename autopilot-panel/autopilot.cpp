@@ -479,7 +479,11 @@ void autopilot::gpioHeadingInput()
     int diff = (val - prevHdgVal) / 4;
     bool switchBox = false;
 
-    if (simVars->sbMode != 1) {
+    // If mode is instruments but we are an airliner then first
+    // switchbox knob does autopilot heading instead of heading bug.
+    bool ignore = simVars->sbMode == 2 || (simVars->sbMode == 3 && !airliner);
+
+    if (ignore) {
         prevHdgValSb = simVars->sbEncoder[3];
     }
     else if (simVars->sbEncoder[3] != prevHdgValSb) {
@@ -522,7 +526,7 @@ void autopilot::gpioHeadingInput()
     int prevVal = prevHdgPush;
     switchBox = false;
 
-    if (simVars->sbMode != 1 || prevHdgPushSb == 0) {
+    if (ignore || prevHdgPushSb == 0) {
         prevHdgPushSb = simVars->sbButton[3];
     }
     else if (simVars->sbButton[3] != prevHdgPushSb) {

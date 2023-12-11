@@ -9,14 +9,14 @@ char dataLinkHost[64];
 int dataLinkPort;
 extern const char* SimVarDefs[][2];
 bool prevConnected = false;
-long dataSize;
+int dataSize;
 Request request;
 char deltaData[8192];
 int nextFull = 0;
 
 void dataLink(simvars*);
 void identifyAircraft(char* aircraft);
-void receiveDelta(char* deltaData, long deltaSize, char* simVarsPtr);
+void receiveDelta(char* deltaData, int deltaSize, char* simVarsPtr);
 
 simvars::simvars()
 {
@@ -83,7 +83,7 @@ void simvars::write(EVENT_ID eventId, double value)
 void resetConnection(simvars* thisPtr)
 {
     // Only want a subset of SimVars for Autopilot panel (to save bandwidth)
-    dataSize = (long)(&thisPtr->simVars.autothrottleActive) + sizeof(double) - (long)&thisPtr->simVars;
+    dataSize = (int)((long)&thisPtr->simVars.autothrottleActive + sizeof(double) - (long)&thisPtr->simVars);
     request.requestedSize = dataSize;
 
     // Want full data on first connect
@@ -138,7 +138,7 @@ void dataLink(simvars* thisPtr)
     timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 500000;
-    long actualSize;
+    int actualSize;
     int bytes;
     int selFail = 0;
 
@@ -186,9 +186,9 @@ void dataLink(simvars* thisPtr)
                 // Receive latest data (delta will never be larger than full data size)
                 bytes = recv(sockfd, deltaData, dataSize, 0);
 
-                if (bytes == sizeof(long)) {
+                if (bytes == 4) {
                     // Data size mismatch
-                    memcpy(&actualSize, &thisPtr->simVars, sizeof(long));
+                    memcpy(&actualSize, &thisPtr->simVars, 4);
                     printf("DataLink: Requested %ld bytes but server sent %ld bytes\n", dataSize, actualSize);
                     fflush(stdout);
                     exit(1);
