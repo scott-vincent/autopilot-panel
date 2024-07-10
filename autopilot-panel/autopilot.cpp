@@ -402,8 +402,8 @@ void autopilot::gpioSpeedInput()
         time(&lastSpdAdjust);
     }
     else if (lastSpdAdjust != 0) {
-        // Reset digit set selection if more than 2 seconds since last adjustment
-        if (now - lastSpdAdjust > 2) {
+        // Reset digit set selection if more than 3 seconds since last adjustment
+        if (now - lastSpdAdjust > 3) {
             spdSetSel = 0;
             lastSpdAdjust = 0;
         }
@@ -515,7 +515,7 @@ void autopilot::gpioHeadingInput()
         time(&lastHdgAdjust);
     }
     else if (lastHdgAdjust != 0) {
-        if (now - lastHdgAdjust > 2) {
+        if (now - lastHdgAdjust > 3) {
             hdgSetSel = 0;
             lastHdgAdjust = 0;
         }
@@ -675,8 +675,8 @@ void autopilot::gpioAltitudeInput()
         time(&lastAltAdjust);
     }
     else if (lastAltAdjust != 0) {
-        // Reset digit set selection if more than 2 seconds since last adjustment
-        if (now - lastAltAdjust > 2) {
+        // Reset digit set selection if more than 3 seconds since last adjustment
+        if (now - lastAltAdjust > 3) {
             altSetSel = 0;
             lastAltAdjust = 0;
         }
@@ -791,7 +791,7 @@ void autopilot::gpioVerticalSpeedInput()
         time(&lastVsAdjust);
     }
     else if (lastVsAdjust != 0) {
-        if (now - lastVsAdjust > 1) {
+        if (now - lastVsAdjust > 3) {
             lastVsAdjust = 0;
         }
     }
@@ -907,7 +907,7 @@ void autopilot::gpioButtonsInput()
         time(&lastApAdjust);
     }
     else if (lastApAdjust != 0) {
-        if (now - lastApAdjust > 1) {
+        if (now - lastApAdjust > 2) {
             lastApAdjust = 0;
         }
     }
@@ -926,7 +926,7 @@ void autopilot::gpioButtonsInput()
         time(&lastFdAdjust);
     }
     else if (lastFdAdjust != 0) {
-        if (now - lastFdAdjust > 1) {
+        if (now - lastFdAdjust > 2) {
             lastFdAdjust = 0;
         }
     }
@@ -964,7 +964,7 @@ void autopilot::gpioButtonsInput()
         time(&lastAthrAdjust);
     }
     else if (lastAthrAdjust != 0) {
-        if (now - lastAthrAdjust > 1) {
+        if (now - lastAthrAdjust > 2) {
             lastAthrAdjust = 0;
         }
     }
@@ -1006,7 +1006,7 @@ void autopilot::gpioButtonsInput()
         time(&lastLocAdjust);
     }
     else if (lastLocAdjust != 0) {
-        if (now - lastLocAdjust > 1) {
+        if (now - lastLocAdjust > 2) {
             lastLocAdjust = 0;
         }
     }
@@ -1047,7 +1047,7 @@ void autopilot::gpioButtonsInput()
         time(&lastApprAdjust);
     }
     else if (lastApprAdjust != 0) {
-        if (now - lastApprAdjust > 1) {
+        if (now - lastApprAdjust > 2) {
             lastApprAdjust = 0;
         }
     }
