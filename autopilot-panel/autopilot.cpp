@@ -356,18 +356,6 @@ void autopilot::gpioSpeedInput()
     int diff = (val - prevSpdVal) / 4;
     bool switchBox = false;
 
-    //if (simVars->sbMode != 1) {
-    //    prevSpdValSb = simVars->sbEncoder[2];
-    //}
-    //else if (simVars->sbEncoder[2] != prevSpdValSb) {
-    //    val = simVars->sbEncoder[2];
-    //    diff = (val - prevSpdValSb) / 2;
-    //    if (diff == 0) {
-    //        val = INT_MIN;
-    //    }
-    //    switchBox = true;
-    //}
-
     if (val != INT_MIN) {
         int adjust = 0;
         if (diff > 0) {
@@ -413,15 +401,6 @@ void autopilot::gpioSpeedInput()
     val = globals.gpioCtrl->readPush(speedControl);
     int prevVal = prevSpdPush;
     switchBox = false;
-
-    //if (simVars->sbMode != 1 || prevSpdPushSb == 0) {
-    //    prevSpdPushSb = simVars->sbButton[2];
-    //}
-    //else if (simVars->sbButton[2] != prevSpdPushSb) {
-    //    val = simVars->sbButton[2];
-    //    prevVal = prevSpdPushSb;
-    //    switchBox = true;
-    //}
 
     if (val != INT_MIN) {
         if (prevVal % 2 == 1) {
@@ -505,6 +484,8 @@ void autopilot::gpioHeadingInput()
             // Adjust heading
             double newVal = adjustHeading(adjust);
             sendEvent(KEY_HEADING_BUG_SET, newVal);
+            lastHdgVal = newVal;
+
             if (switchBox) {
                 prevHdgValSb = val;
             }
@@ -518,6 +499,9 @@ void autopilot::gpioHeadingInput()
         if (now - lastHdgAdjust > 3) {
             hdgSetSel = 0;
             lastHdgAdjust = 0;
+            if (lastHdgVal != -1) {
+                sendEvent(KEY_HEADING_BUG_SET, lastHdgVal);
+            }
         }
     }
 
@@ -527,10 +511,10 @@ void autopilot::gpioHeadingInput()
     switchBox = false;
 
     if (ignore || prevHdgPushSb == 0) {
-        prevHdgPushSb = simVars->sbButton[3];
+        prevHdgPushSb = int(simVars->sbButton[3]);
     }
     else if (simVars->sbButton[3] != prevHdgPushSb) {
-        val = simVars->sbButton[3];
+        val = int(simVars->sbButton[3]);
         prevVal = prevHdgPushSb;
         switchBox = true;
     }
@@ -640,7 +624,7 @@ void autopilot::gpioAltitudeInput()
     int diff = (val - prevAltVal) / 4;
     bool switchBox = false;
 
-    if (simVars->sbMode != 1) {
+    if (simVars->sbMode > 1) {
         prevAltValSb = simVars->sbEncoder[1];
     }
     else if (simVars->sbEncoder[1] != prevAltValSb) {
@@ -662,6 +646,7 @@ void autopilot::gpioAltitudeInput()
             // Adjust altitude
             double newVal = adjustAltitude(adjust);
             sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
+            lastAltVal = newVal;
             if (setVerticalSpeed != 0) {
                 setAltitude = newVal;
             }
@@ -679,6 +664,9 @@ void autopilot::gpioAltitudeInput()
         if (now - lastAltAdjust > 3) {
             altSetSel = 0;
             lastAltAdjust = 0;
+            if (lastAltVal != -1) {
+                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, lastAltVal);
+            }
         }
     }
 
@@ -687,7 +675,7 @@ void autopilot::gpioAltitudeInput()
     int prevVal = prevAltPush;
     switchBox = false;
 
-    if (simVars->sbMode != 1 || prevAltPushSb == 0) {
+    if (simVars->sbMode > 1 || prevAltPushSb == 0) {
         prevAltPushSb = simVars->sbButton[1];
     }
     else if (simVars->sbButton[1] != prevAltPushSb) {
@@ -748,7 +736,7 @@ void autopilot::gpioVerticalSpeedInput()
     int diff = (val - prevVsVal) / 4;
     bool switchBox = false;
 
-    if (simVars->sbMode != 1) {
+    if (simVars->sbMode > 1) {
         prevVsValSb = simVars->sbEncoder[0];
     }
     else if (simVars->sbEncoder[0] != prevVsValSb) {
@@ -772,11 +760,13 @@ void autopilot::gpioVerticalSpeedInput()
                 double newVal = adjustFpa(adjust);
                 // Expects FPA x 10
                 sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+                lastVsVal = newVal;
             }
             else {
                 // Adjust vertical speed
                 double newVal = adjustVerticalSpeed(adjust);
                 sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+                lastVsVal = newVal;
                 if (setVerticalSpeed != 0) {
                     setVerticalSpeed = newVal;
                 }
@@ -793,6 +783,9 @@ void autopilot::gpioVerticalSpeedInput()
     else if (lastVsAdjust != 0) {
         if (now - lastVsAdjust > 3) {
             lastVsAdjust = 0;
+            if (lastVsVal != -1) {
+                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, lastVsVal);
+            }
         }
     }
 
@@ -801,7 +794,7 @@ void autopilot::gpioVerticalSpeedInput()
     int prevVal = prevVsPush;
     switchBox = false;
 
-    if (simVars->sbMode != 1 || prevVsPushSb == 0) {
+    if (simVars->sbMode > 1 || prevVsPushSb == 0) {
         prevVsPushSb = simVars->sbButton[0];
     }
     else if (simVars->sbButton[0] != prevVsPushSb) {
@@ -852,7 +845,7 @@ void autopilot::gpioButtonsInput()
     int prevVal = prevApPush;
     int switchBox = false;
 
-    if (simVars->sbMode != 1 || prevApPushSb == 0) {
+    if (simVars->sbMode > 1 || prevApPushSb == 0) {
         prevApPushSb = simVars->sbButton[6];
     }
     else if (simVars->sbButton[6] != prevApPushSb) {
@@ -974,7 +967,7 @@ void autopilot::gpioButtonsInput()
     prevVal = prevLocPush;
     switchBox = false;
 
-    if (simVars->sbMode != 1 || prevLocPushSb == 0) {
+    if (simVars->sbMode > 1 || prevLocPushSb == 0) {
         prevLocPushSb = simVars->sbButton[5];
     }
     else if (simVars->sbButton[5] != prevLocPushSb) {
@@ -1016,7 +1009,7 @@ void autopilot::gpioButtonsInput()
     prevVal = prevApprPush;
     switchBox = false;
 
-    if (simVars->sbMode != 1 || prevApprPushSb == 0) {
+    if (simVars->sbMode > 1 || prevApprPushSb == 0) {
         prevApprPushSb = simVars->sbButton[4];
     }
     else if (simVars->sbButton[4] != prevApprPushSb) {

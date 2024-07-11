@@ -1,6 +1,6 @@
 /*
  * Flight Simulator Autopilot Panel
- * Copyright (c) 2023 Scott Vincent
+ * Copyright (c) 2024 Scott Vincent
  */
 
 #include <stdio.h>

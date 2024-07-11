@@ -97,6 +97,9 @@ private:
     int prevApPushSb = 0;
     int prevLocPushSb = 0;
     int prevApprPushSb = 0;
+    double lastHdgVal = -1;
+    double lastAltVal = -1;
+    double lastVsVal = -1;
 
     time_t lastSpdAdjust = 0;
     time_t lastSpdPush = 0;
