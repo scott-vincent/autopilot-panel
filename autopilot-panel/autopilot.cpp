@@ -511,10 +511,10 @@ void autopilot::gpioHeadingInput()
     switchBox = false;
 
     if (ignore || prevHdgPushSb == 0) {
-        prevHdgPushSb = int(simVars->sbButton[3]);
+        prevHdgPushSb = simVars->sbButton[3];
     }
     else if (simVars->sbButton[3] != prevHdgPushSb) {
-        val = int(simVars->sbButton[3]);
+        val = simVars->sbButton[3];
         prevVal = prevHdgPushSb;
         switchBox = true;
     }
