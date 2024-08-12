@@ -56,6 +56,8 @@ private:
     bool managedAltitude = false;
     int orbit = 0;  // 1 = left orbit, 2 = right orbit
     int orbitDelay = 0;
+    int altSetRetry = 0;
+    int vsSetRetry = 0;
 
     // Hardware controls
     int speedControl = -1;
@@ -146,6 +148,8 @@ private:
     int adjustVerticalSpeed(int adjust);
     double adjustFpa(int adjust);
     void continueOrbit();
+    void newAltitude(double val);
+    void newVerticalSpeed(double val);
 };
 
 #endif // _AUTOPILOT_H

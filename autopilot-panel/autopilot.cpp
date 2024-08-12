@@ -259,6 +259,52 @@ void autopilot::update()
     if (simVars->jbAutobrake > 0 && (simVars->brakeLeftPedal > 5 || simVars->brakeRightPedal > 5)) {
         sendEvent(KEY_AUTOBRAKE, 0);
     }
+
+    //  Fix autopilot ALT set
+    if (altSetRetry > 0) {
+        altSetRetry--;
+        if (lastAltVal != -1 && simVars->autopilotAltitude != lastAltVal) {
+            // Keep trying to set the correct value
+            if (altSetRetry % 4 == 0) {
+                int diff = lastAltVal - simVars->autopilotAltitude;
+                if (diff > 900) {
+                    sendEvent(KEY_AP_ALT_VAR_INC, 1000);
+                }
+                else if (diff < -900) {
+                    sendEvent(KEY_AP_ALT_VAR_DEC, 1000);
+                }
+                else if (diff > 90) {
+                    sendEvent(KEY_AP_ALT_VAR_INC, 100);
+                }
+                else if (diff < -90) {
+                    sendEvent(KEY_AP_ALT_VAR_DEC, 100);
+                }
+            }
+        }
+    }
+
+    // Fix autopilot VS set
+    if (vsSetRetry > 0) {
+        vsSetRetry--;
+        if (lastVsVal != -1 && simVars->autopilotVerticalSpeed != lastVsVal) {
+            // Keep trying to set the correct value (but not too quickly)
+            if (vsSetRetry % 10 == 0) {
+                int diff = lastVsVal - simVars->autopilotVerticalSpeed;
+                if (diff > 900) {
+                    sendEvent(KEY_AP_VS_VAR_INC, 1000);
+                }
+                else if (diff < -900) {
+                    sendEvent(KEY_AP_VS_VAR_DEC, 1000);
+                }
+                else if (diff > 90) {
+                    sendEvent(KEY_AP_VS_VAR_INC, 100);
+                }
+                else if (diff < -90) {
+                    sendEvent(KEY_AP_VS_VAR_DEC, 100);
+                }
+            }
+        }
+    }
 }
 
 void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
@@ -645,8 +691,7 @@ void autopilot::gpioAltitudeInput()
         if (adjust != 0) {
             // Adjust altitude
             double newVal = adjustAltitude(adjust);
-            sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
-            lastAltVal = newVal;
+            newAltitude(newVal);
             if (setVerticalSpeed != 0) {
                 setAltitude = newVal;
             }
@@ -664,9 +709,6 @@ void autopilot::gpioAltitudeInput()
         if (now - lastAltAdjust > 3) {
             altSetSel = 0;
             lastAltAdjust = 0;
-            if (lastAltVal != -1) {
-                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, lastAltVal);
-            }
         }
     }
 
@@ -759,13 +801,12 @@ void autopilot::gpioVerticalSpeedInput()
                 // Adust FPA
                 double newVal = adjustFpa(adjust);
                 // Expects FPA x 10
-                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
-                lastVsVal = newVal;
+                newVerticalSpeed(newVal);
             }
             else {
                 // Adjust vertical speed
                 double newVal = adjustVerticalSpeed(adjust);
-                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+                newVerticalSpeed(newVal);
                 lastVsVal = newVal;
                 if (setVerticalSpeed != 0) {
                     setVerticalSpeed = newVal;
@@ -783,9 +824,6 @@ void autopilot::gpioVerticalSpeedInput()
     else if (lastVsAdjust != 0) {
         if (now - lastVsAdjust > 3) {
             lastVsAdjust = 0;
-            if (lastVsVal != -1) {
-                sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, lastVsVal);
-            }
         }
     }
 
@@ -888,7 +926,7 @@ void autopilot::gpioButtonsInput()
             }
 
             if (apEnabled && airliner && fdEnabled) {
-                sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+                newAltitude(setAltitude);
             }
         }
         if (switchBox) {
@@ -1119,7 +1157,7 @@ void autopilot::toggleFlightDirector()
 
     sendEvent(KEY_AP_ALT_HOLD_ON);
     if (simVars->autopilotAltitude < setAltitude) {
-        sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+        newAltitude(setAltitude);
     }
     sendEvent(KEY_AP_AIRSPEED_ON);
 
@@ -1131,7 +1169,7 @@ void autopilot::toggleFlightDirector()
 
     managedAltitude = true;
     sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
-    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    newVerticalSpeed(setVerticalSpeed);
 }
 
 /// <summary>
@@ -1162,7 +1200,7 @@ void autopilot::captureInitial()
     sendEvent(KEY_AP_PANEL_HEADING_SET, 0);
 
     sendEvent(KEY_AP_ALT_HOLD_ON);
-    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, setAltitude);
+    newAltitude(setAltitude);
     sendEvent(KEY_AP_AIRSPEED_ON);
 
     managedSpeed = false;
@@ -1171,7 +1209,7 @@ void autopilot::captureInitial()
 
     managedAltitude = true;
     sendEvent(KEY_AP_VS_SLOT_INDEX_SET, 2);
-    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+    newVerticalSpeed(setVerticalSpeed);
 }
 
 /// <summary>
@@ -1249,7 +1287,8 @@ void autopilot::selectedVs()
     if (loadedAircraft == AIRBUS_A310) {
         sendEvent(KEY_AP_VS_SET);
     }
-    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, simVars->autopilotAltitude);
+    newAltitude(simVars->autopilotAltitude);
+
     sendEvent(KEY_AP_ALT_HOLD_ON);
 
     if (loadedAircraft == BOEING_747) {
@@ -1290,7 +1329,7 @@ void autopilot::captureCurrent()
         else {
             holdAlt += 100 - hundreds;
         }
-        sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, holdAlt);
+        newAltitude(holdAlt);
     }
 }
 
@@ -1301,12 +1340,12 @@ void autopilot::captureVerticalSpeed()
     if (setAltitude < simVars->altAltitude && simVars->autopilotVerticalSpeed >= 0) {
         setVerticalSpeed = -700;
         sendEvent(KEY_AP_VS_SET, 1);
-        sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+        newVerticalSpeed(setVerticalSpeed);
     }
     else if (setAltitude > simVars->altAltitude && simVars->autopilotVerticalSpeed <= 0) {
         setVerticalSpeed = 700;
         sendEvent(KEY_AP_VS_SET, 1);
-        sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+        newVerticalSpeed(setVerticalSpeed);
     }
     else {
         setVerticalSpeed = simVars->autopilotVerticalSpeed;
@@ -1393,12 +1432,12 @@ int autopilot::adjustAltitude(int adjust)
         if (altitude < simVars->altAltitude && setVerticalSpeed >= 0) {
             setVerticalSpeed = -700;
             sendEvent(KEY_AP_VS_SET, 1);
-            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+            newVerticalSpeed(setVerticalSpeed);
         }
         else if (altitude > simVars->altAltitude && setVerticalSpeed <= 0) {
             setVerticalSpeed = 700;
             sendEvent(KEY_AP_VS_SET, 1);
-            sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, setVerticalSpeed);
+            newVerticalSpeed(setVerticalSpeed);
         }
     }
 
@@ -1466,4 +1505,18 @@ void autopilot::continueOrbit()
         sendEvent(KEY_HEADING_BUG_SET, heading);
         time(&lastHdgAdjust);
     }
+}
+
+void autopilot::newAltitude(double newVal)
+{
+    sendEvent(KEY_AP_ALT_VAR_SET_ENGLISH, newVal);
+    lastAltVal = newVal;
+    altSetRetry = 30;
+}
+
+void autopilot::newVerticalSpeed(double newVal)
+{
+    sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
+    lastVsVal = newVal;
+    vsSetRetry = 30;
 }

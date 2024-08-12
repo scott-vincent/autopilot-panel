@@ -7,9 +7,9 @@
 
 Download the following two files.
 
-Link: [Latest release of Autopilot Panel for Raspberry Pi Zero W](https://github.com/scott-vincent/autopilot-panel/releases/latest/download/autopilot-panel-v1.5.1-raspi.tar.gz)
+Link: [Latest release of Autopilot Panel for Raspberry Pi Zero W](https://github.com/scott-vincent/autopilot-panel/releases/latest/download/autopilot-panel-v1.5.2-raspi.tar.gz)
 
-Link: [Latest release of Instrument Data Link for Windows](https://github.com/scott-vincent/instrument-data-link/releases/latest/download/instrument-data-link-v2.0.1-windows-x64.zip)
+Link: [Latest release of Instrument Data Link for Windows](https://github.com/scott-vincent/instrument-data-link/releases/latest/download/instrument-data-link-v2.0.2-windows-x64.zip)
 
 Unzip instrument-data-link into its own folder and double-click instrument-data-link.exe to run it.
 
