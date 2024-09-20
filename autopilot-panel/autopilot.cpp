@@ -648,12 +648,18 @@ void autopilot::gpioHeadingInput()
                         manSelHeading();
                         // Keep same heading when heading hold turned off
                         sendEvent(KEY_HEADING_BUG_SET, setHeading);
+                        heading = setHeading;
+                        lastHdgVal = setHeading;
                     }
                 }
                 else {
                     autopilotHdg = HdgSet;
                     sendEvent(KEY_AP_HDG_HOLD_ON);
                     manSelHeading();
+                    // Keep same heading when heading hold turned on
+                    sendEvent(KEY_HEADING_BUG_SET, setHeading);
+                    heading = setHeading;
+                    lastHdgVal = setHeading;
                 }
             }
             hdgSetSel = 0;
