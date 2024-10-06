@@ -18,11 +18,19 @@ autopilot::autopilot()
 void autopilot::render()
 {
     if (!globals.electrics) {
-        // Turn off 7-segment displays
-        sevenSegment->blankSegData(display1, 8, false);
-        sevenSegment->blankSegData(display2, 8, false);
-        sevenSegment->blankSegData(display3, 8, false);
-        sevenSegment->writeSegData3(display1, display2, display3);
+        int newAble = getAbleData();
+        if (newAble != -1) {
+            if (newAble == 1) {
+                showAbleData();
+            }
+        }
+        else {
+            // Turn off 7-segment displays
+            sevenSegment->blankSegData(display1, 8, false);
+            sevenSegment->blankSegData(display2, 8, false);
+            sevenSegment->blankSegData(display3, 8, false);
+            sevenSegment->writeSegData3(display1, display2, display3);
+        }
 
         // Turn off LEDS
         globals.gpioCtrl->writeLed(autopilotControl, false);
@@ -1525,4 +1533,81 @@ void autopilot::newVerticalSpeed(double newVal)
     sendEvent(KEY_AP_VS_VAR_SET_ENGLISH, newVal);
     lastVsVal = newVal;
     vsSetRetry = 30;
+}
+
+int autopilot::getAbleData()
+{
+    time(&now);
+    if (now - lastAbleData < 2) {
+        return 0;
+    }
+
+    lastAbleData = now;
+
+    FILE* pipe = popen("/home/pi/flightradar_able/get_able.py 2>/dev/null", "r");
+    if (!pipe) {
+        return false;
+    }
+
+    ableData[14] = 0;
+    fread(ableData, 17, 1, pipe);
+    pclose(pipe);
+
+    if (ableData[14] != ',') {
+        return -1;
+    }
+
+    return 1;
+}
+
+void autopilot::showAbleData()
+{
+    if (strncmp(ableData, prevAbleData, 17) == 0) {
+        return;
+    }
+
+    strncpy(prevAbleData, ableData, 17);
+
+    if (ableData[0] == '-') {
+        sevenSegment->blankSegData(display1, 3, false);
+    }
+    else {
+        sevenSegment->getSegData(display1, 3, atoi(&ableData[0]), 2);
+    }
+    if (ableData[3] == '-') {
+        sevenSegment->blankSegData(&display1[3], 5, false);
+    }
+    else {
+        sevenSegment->getSegData(&display1[3], 5, atoi(&ableData[3]), 2);
+    }
+
+    if (ableData[6] == '-') {
+        sevenSegment->blankSegData(display2, 5, false);
+    }
+    else {
+        sevenSegment->getSegData(display2, 5, atoi(&ableData[6]), 2);
+    }
+    if (ableData[9] == '-') {
+        sevenSegment->blankSegData(&display2[5], 3, false);
+    }
+    else {
+        sevenSegment->getSegData(&display2[5], 3, atoi(&ableData[9]), 2);
+
+    }
+
+    if (ableData[12] == '-') {
+        sevenSegment->blankSegData(display3, 5, false);
+    }
+    else {
+        sevenSegment->getSegData(display3, 5, atoi(&ableData[12]), 2);
+    }
+    if (ableData[15] == '-') {
+        sevenSegment->blankSegData(&display3[5], 3, false);
+    }
+    else {
+        sevenSegment->getSegData(&display3[5], 3, atoi(&ableData[15]), 2);
+
+    }
+
+    sevenSegment->writeSegData3(display1, display2, display3);
 }

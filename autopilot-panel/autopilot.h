@@ -58,6 +58,9 @@ private:
     int orbitDelay = 0;
     int altSetRetry = 0;
     int vsSetRetry = 0;
+    char ableData[18];
+    char prevAbleData[18];
+    time_t lastAbleData = 0;
 
     // Hardware controls
     int speedControl = -1;
@@ -150,6 +153,8 @@ private:
     void continueOrbit();
     void newAltitude(double val);
     void newVerticalSpeed(double val);
+    int getAbleData();
+    void showAbleData();
 };
 
 #endif // _AUTOPILOT_H
