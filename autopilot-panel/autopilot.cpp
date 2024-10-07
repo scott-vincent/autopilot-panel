@@ -44,6 +44,7 @@ void autopilot::render()
 
         return;
     }
+    *prevAbleData = '\0';
 
     // Write to 7-segment displays
     if (managedSpeed || !airliner) {
@@ -1538,15 +1539,15 @@ void autopilot::newVerticalSpeed(double newVal)
 int autopilot::getAbleData()
 {
     time(&now);
-    if (now - lastAbleData < 2) {
+    if (now - lastAbleData < 3) {
         return 0;
     }
 
     lastAbleData = now;
 
-    FILE* pipe = popen("/home/pi/flightradar_able/get_able.py 2>/dev/null", "r");
+    FILE* pipe = popen("ssh 192.168.1.55 cat /home/pi/flightradar_able/able_data", "r");
     if (!pipe) {
-        return false;
+        return -1;
     }
 
     ableData[14] = 0;
