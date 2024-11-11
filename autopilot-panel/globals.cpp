@@ -10,53 +10,57 @@ void identifyAircraft(char* aircraft)
 {
     // Identify aircraft
     if (strcmp(aircraft, globals.lastAircraft) != 0) {
-        if (strncmp(aircraft, globals.Cessna_152_Text, globals.Cessna_152_Len) == 0) {
-            globals.aircraft = CESSNA_152;
+        bool foundAircraft = false;
+
+        char* pos = strchr(aircraft, '3');
+        if (pos && *(pos - 1) == 'A') {
+            if (*(pos + 1) == '1') {
+                globals.aircraft = AIRBUS_A310;
+                foundAircraft = true;
+            }
+            else if (*(pos + 1) == '2' || *(pos + 1) == '8') {
+                globals.aircraft = FBW;
+                foundAircraft = true;
+            }
         }
-        else if (strncmp(aircraft, globals.Cessna_172_Text, globals.Cessna_172_Len) == 0) {
-            globals.aircraft = CESSNA_172;
-        }
-        else if (strncmp(aircraft, globals.Cessna_CJ4_Text, globals.Cessna_CJ4_Len) == 0) {
-            globals.aircraft = CESSNA_CJ4;
-        }
-        else if (strncmp(aircraft, globals.Cessna_Longitude_Text, globals.Cessna_Longitude_Len) == 0) {
-            globals.aircraft = CESSNA_LONGITUDE;
-        }
-        else if (strncmp(aircraft, globals.Savage_Cub_Text, globals.Savage_Cub_Len) == 0) {
-            globals.aircraft = SAVAGE_CUB;
-        }
-        else if (strncmp(aircraft, globals.Shock_Ultra_Text, globals.Shock_Ultra_Len) == 0) {
-            globals.aircraft = SHOCK_ULTRA;
-        }
-        else if (strncmp(aircraft, globals.Airbus_A310_Text, globals.Airbus_A310_Len) == 0) {
-            globals.aircraft = AIRBUS_A310;
-        }
-        else if (strncmp(aircraft, globals.IniBuilds_A310_Text, globals.IniBuilds_A310_Len) == 0) {
-            globals.aircraft = AIRBUS_A310;
-        }
-        else if (strncmp(aircraft, globals.Airbus_A320_Text, globals.Airbus_A320_Len) == 0) {
-            globals.aircraft = FBW_A320;
-        }
-        else if (strncmp(aircraft, globals.FBW_A320_Text, globals.FBW_A320_Len) == 0) {
-            globals.aircraft = FBW_A320;
-        }
-        else if (strncmp(aircraft, globals.Boeing_747_Text, globals.Boeing_747_Len) == 0) {
-            globals.aircraft = BOEING_747;
-        }
-        else if (strncmp(aircraft, globals.Salty_Boeing_747_Text, globals.Salty_Boeing_747_Len) == 0) {
-            globals.aircraft = BOEING_747;
-        }
-        else if (strncmp(aircraft, globals.Supermarine_Spitfire_Text, globals.Supermarine_Spitfire_Len) == 0) {
-            globals.aircraft = SUPERMARINE_SPITFIRE;
-        }
-        else {
-            // Need to flip between other aircraft so that instruments
-            // can detect the aircraft has changed.
-            if (globals.aircraft == OTHER_AIRCRAFT) {
-                globals.aircraft = OTHER_AIRCRAFT2;
+
+        if (!foundAircraft) {
+            if (strncmp(aircraft, globals.Cessna_152_Text, globals.Cessna_152_Len) == 0) {
+                globals.aircraft = CESSNA_152;
+            }
+            else if (strncmp(aircraft, globals.Cessna_172_Text, globals.Cessna_172_Len) == 0) {
+                globals.aircraft = CESSNA_172;
+            }
+            else if (strncmp(aircraft, globals.Cessna_CJ4_Text, globals.Cessna_CJ4_Len) == 0) {
+                globals.aircraft = CESSNA_CJ4;
+            }
+            else if (strncmp(aircraft, globals.Cessna_Longitude_Text, globals.Cessna_Longitude_Len) == 0) {
+                globals.aircraft = CESSNA_LONGITUDE;
+            }
+            else if (strncmp(aircraft, globals.Savage_Cub_Text, globals.Savage_Cub_Len) == 0) {
+                globals.aircraft = SAVAGE_CUB;
+            }
+            else if (strncmp(aircraft, globals.Shock_Ultra_Text, globals.Shock_Ultra_Len) == 0) {
+                globals.aircraft = SHOCK_ULTRA;
+            }
+            else if (strncmp(aircraft, globals.Boeing_747_Text, globals.Boeing_747_Len) == 0) {
+                globals.aircraft = BOEING_747;
+            }
+            else if (strncmp(aircraft, globals.Salty_Boeing_747_Text, globals.Salty_Boeing_747_Len) == 0) {
+                globals.aircraft = BOEING_747;
+            }
+            else if (strncmp(aircraft, globals.Supermarine_Spitfire_Text, globals.Supermarine_Spitfire_Len) == 0) {
+                globals.aircraft = SUPERMARINE_SPITFIRE;
             }
             else {
-                globals.aircraft = OTHER_AIRCRAFT;
+                // Need to flip between other aircraft so that instruments
+                // can detect the aircraft has changed.
+                if (globals.aircraft == OTHER_AIRCRAFT) {
+                    globals.aircraft = OTHER_AIRCRAFT2;
+                }
+                else {
+                    globals.aircraft = OTHER_AIRCRAFT;
+                }
             }
         }
         strcpy(globals.lastAircraft, aircraft);

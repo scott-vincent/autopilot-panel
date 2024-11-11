@@ -145,7 +145,7 @@ void autopilot::update()
         apprEnabled = simVars->autopilotGlideslopeHold;
         lastSetHeading = -1;
         setVerticalSpeed = 0;
-        if (loadedAircraft != AIRBUS_A310 && loadedAircraft != FBW_A320 && loadedAircraft != BOEING_747) {
+        if (loadedAircraft != AIRBUS_A310 && loadedAircraft != FBW && loadedAircraft != BOEING_747) {
             managedSpeed = false;
             managedHeading = false;
             managedAltitude = false;
@@ -180,7 +180,7 @@ void autopilot::update()
             managedSpeed = simVars->jbManagedSpeed;
             showMach = simVars->jbShowMach != 0;
         }
-        else if (loadedAircraft == FBW_A320) {
+        else if (loadedAircraft == FBW) {
             managedSpeed = simVars->jbManagedSpeed;
             showMach = simVars->jbAutothrustMode == 8;
         }
@@ -190,7 +190,7 @@ void autopilot::update()
     }
     if (lastHdgAdjust == 0) {
         heading = simVars->autopilotHeading;
-        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW_A320) {
+        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW) {
             managedHeading = simVars->jbManagedHeading;
         }
 
@@ -208,7 +208,7 @@ void autopilot::update()
     }
     if (lastAltAdjust == 0) {
         altitude = simVars->autopilotAltitude;
-        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW_A320) {
+        if (loadedAircraft == AIRBUS_A310 || loadedAircraft == FBW) {
             managedAltitude = simVars->jbManagedAltitude;
         }
     }
@@ -318,8 +318,8 @@ void autopilot::update()
 
 void autopilot::sendEvent(EVENT_ID id, double value = 0.0)
 {
-    if (loadedAircraft == FBW_A320) {
-        // Convert events to A32NX specific events
+    if (loadedAircraft == FBW) {
+        // Convert events to FBW specific events
         switch (id) {
         case KEY_AP_HDG_HOLD_OFF:
             id = A32NX_FCU_HDG_PUSH;
@@ -860,7 +860,7 @@ void autopilot::gpioVerticalSpeedInput()
         // If in selected mode, short press switches between HDG,V/S and TRK,FPA mode.
         // If in managed mode, short press switches to selected mode.
         if (prevVal % 2 == 1) {
-            if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW_A320) {
+            if (simVars->autopilotVerticalHold == 0 || loadedAircraft != FBW) {
                 selectedVs();
             }
             else {
@@ -1127,7 +1127,7 @@ void autopilot::machSwap()
         }
     }
 
-    if (loadedAircraft == FBW_A320) {
+    if (loadedAircraft == FBW) {
         sendEvent(A32NX_FCU_SPD_MACH_TOGGLE_PUSH);
     }
 }

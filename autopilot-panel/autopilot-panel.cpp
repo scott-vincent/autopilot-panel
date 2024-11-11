@@ -13,7 +13,7 @@
 #include "simvars.h"
 #include "autopilot.h"
 
-const char* autopilotVersion = "v1.5.3";
+const char* autopilotVersion = "v1.5.4";
 const bool Debug = false;
 
 struct globalVars globals;
@@ -42,7 +42,7 @@ void updateCommon()
     SimVars* simVars = &globals.simVars->simVars;
 
     // Electrics check
-    if (globals.aircraft == FBW_A320) {
+    if (globals.aircraft == FBW) {
         // Autopilot only comes on if both batteries on or
         // have external power, APU or main engines running.
         globals.electrics = globals.connected && (simVars->dcVolts > 25.4 ||
