@@ -653,7 +653,12 @@ void autopilot::gpioHeadingInput()
                     }
                     else {
                         autopilotHdg = LevelFlight;
-                        sendEvent(KEY_AP_HDG_HOLD_OFF);
+                        if (!airliner && apEnabled && simVars->gpsDrivesNav1 > 0) {
+                            sendEvent(KEY_AP_NAV1_HOLD_ON);
+                        }
+                        else {
+                            sendEvent(KEY_AP_HDG_HOLD_OFF);
+                        }
                         manSelHeading();
                         // Keep same heading when heading hold turned off
                         sendEvent(KEY_HEADING_BUG_SET, setHeading);
@@ -943,6 +948,11 @@ void autopilot::gpioButtonsInput()
             if (apEnabled && airliner && fdEnabled) {
                 newAltitude(setAltitude);
             }
+
+            if (!airliner && apEnabled && simVars->gpsDrivesNav1 > 0 && autopilotHdg != HdgSet) {
+                sendEvent(KEY_AP_NAV1_HOLD_ON);
+            }
+
         }
         if (switchBox) {
             prevApPushSb = val;

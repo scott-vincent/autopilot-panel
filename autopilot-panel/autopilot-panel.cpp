@@ -13,7 +13,7 @@
 #include "simvars.h"
 #include "autopilot.h"
 
-const char* autopilotVersion = "v1.5.4";
+const char* autopilotVersion = "v1.5.5";
 const bool Debug = false;
 
 struct globalVars globals;
